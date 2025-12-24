@@ -16,13 +16,23 @@ class RegisterController extends Controller
 
     public function register(Request $request)
     {
-        // Validasi input
+        // Validasi input dengan password validation yang kuat
         $request->validate([
             'full_name' => 'required|string|max:255',
             'farm_name' => 'nullable|string|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:8',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[a-z]/',      // minimal 1 huruf kecil
+                'regex:/[A-Z]/',      // minimal 1 huruf besar
+                'regex:/[0-9]/',      // minimal 1 angka
+            ],
+        ], [
+            'password.min' => 'Password minimal 8 karakter.',
+            'password.regex' => 'Password harus mengandung minimal 1 huruf besar, 1 huruf kecil, dan 1 angka.',
         ]);
 
         // Buat user baru

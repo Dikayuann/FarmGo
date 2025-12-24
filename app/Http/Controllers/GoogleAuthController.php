@@ -33,6 +33,7 @@ class GoogleAuthController extends Controller
             if ($user) {
                 // User sudah ada dengan Google ID, langsung login
                 Auth::login($user);
+                request()->session()->regenerate();
 
                 // Redirect based on role
                 if ($user->isAdmin()) {
@@ -52,6 +53,7 @@ class GoogleAuthController extends Controller
                 ]);
 
                 Auth::login($existingUser);
+                request()->session()->regenerate();
 
                 // Redirect based on role
                 if ($existingUser->isAdmin()) {
@@ -71,6 +73,8 @@ class GoogleAuthController extends Controller
             ]);
 
             Auth::login($newUser);
+            request()->session()->regenerate();
+
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {

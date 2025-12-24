@@ -3,11 +3,7 @@
 @section('title', 'Dashboard - FarmGo')
 @section('page-title', 'Dashboard')
 
-@php
-    // Simulasi Data (Integrasi Logika)
-    $populationData = [195, 205, 215, 220, 230, 248];
-    $reproductionData = [65, 72, 70, 78, 81];
-@endphp
+{{-- Data sudah dikirim dari DashboardController --}}
 
 @section('content')
 
@@ -17,7 +13,7 @@
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-2">Total Ternak</p>
-                <h3 class="text-4xl font-bold text-gray-800">248</h3>
+                <h3 class="text-4xl font-bold text-gray-800">{{$totalTernak}}</h3>
             </div>
             <div
                 class="bg-blue-600 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-blue-200 shadow-lg">
@@ -33,7 +29,7 @@
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-2">Perlu Cek <br>Kesehatan</p>
-                <h3 class="text-4xl font-bold text-gray-800">12</h3>
+                <h3 class="text-4xl font-bold text-gray-800">{{ $perluCekKesehatan }}</h3>
             </div>
             <div
                 class="bg-orange-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-orange-200 shadow-lg">
@@ -49,7 +45,7 @@
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-2">Reproduksi <br>Mendatang</p>
-                <h3 class="text-4xl font-bold text-gray-800">8</h3>
+                <h3 class="text-4xl font-bold text-gray-800">{{ $reproduksiMendatang }}</h3>
             </div>
             <div
                 class="bg-purple-600 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-purple-200 shadow-lg">
@@ -64,7 +60,7 @@
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-2">Status <br>Peternakan</p>
-                <h3 class="text-4xl font-bold text-gray-800">Baik</h3>
+                <h3 class="text-4xl font-bold text-gray-800">{{ $statusPeternakan }}</h3>
             </div>
             <div
                 class="bg-green-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-green-200 shadow-lg">
@@ -104,61 +100,48 @@
 
         <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 class="font-medium text-lg text-gray-800 mb-6">Tugas Kesehatan Mendatang</h3>
-            <div class="space-y-4">
-
-                <div
-                    class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-gray-800">Sapi #A-102</span>
-                        <span class="text-sm text-gray-500">Vaksinasi - Mulut & Kuku</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="text-xs text-gray-500">2 Nov 2025</span>
-                        <span
-                            class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">Tinggi</span>
-                    </div>
+            
+            @if($tugasKesehatan->count() > 0)
+                <div class="space-y-4">
+                    @foreach($tugasKesehatan as $tugas)
+                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
+                            <div class="flex flex-col">
+                                <span class="font-bold text-gray-800">{{ $tugas->animal->kode_hewan }} - {{ $tugas->animal->nama_hewan }}</span>
+                                <span class="text-sm text-gray-500">{{ $tugas->jenis_pemeriksaan }}</span>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="text-xs text-gray-500">
+                                    {{ \Carbon\Carbon::parse($tugas->pemeriksaan_berikutnya)->format('d M Y') }}
+                                </span>
+                                
+                                @php
+                                    // Hitung berapa hari lagi
+                                    $daysUntil = \Carbon\Carbon::today()->diffInDays($tugas->pemeriksaan_berikutnya, false);
+                                    
+                                    if ($daysUntil <= 3) {
+                                        $badge = 'bg-red-500';
+                                        $priority = 'Tinggi';
+                                    } elseif ($daysUntil <= 7) {
+                                        $badge = 'bg-gray-800';
+                                        $priority = 'Sedang';
+                                    } else {
+                                        $badge = 'bg-gray-400';
+                                        $priority = 'Rendah';
+                                    }
+                                @endphp
+                                
+                                <span class="{{ $badge }} text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
+                                    {{ $priority }}
+                                </span>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-
-                <div
-                    class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-gray-800">Banteng #B-045</span>
-                        <span class="text-sm text-gray-500">Cek Kesehatan</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="text-xs text-gray-500">3 Nov 2025</span>
-                        <span
-                            class="bg-gray-800 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">Sedang</span>
-                    </div>
+            @else
+                <div class="text-center py-8 text-gray-400">
+                    <p>Tidak ada tugas kesehatan yang dijadwalkan</p>
                 </div>
-
-                <div
-                    class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-gray-800">Sapi #A-087</span>
-                        <span class="text-sm text-gray-500">Cek Kehamilan</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="text-xs text-gray-500">5 Nov 2025</span>
-                        <span
-                            class="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">Tinggi</span>
-                    </div>
-                </div>
-
-                <div
-                    class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
-                    <div class="flex flex-col">
-                        <span class="font-bold text-gray-800">Kambing #G-234</span>
-                        <span class="text-sm text-gray-500">Pemberian Obat Cacing</span>
-                    </div>
-                    <div class="flex flex-col items-end gap-1">
-                        <span class="text-xs text-gray-500">7 Nov 2025</span>
-                        <span
-                            class="bg-gray-400 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">Rendah</span>
-                    </div>
-                </div>
-
-            </div>
+            @endif
         </div>
 
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
@@ -192,7 +175,7 @@
             new Chart(ctxPop, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                    labels: @json($monthLabels),
                     datasets: [{
                         label: 'Total Populasi',
                         data: @json($populationData),

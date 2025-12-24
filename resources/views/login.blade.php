@@ -27,6 +27,54 @@
                 <img src="{{ asset('image/FarmGo.png') }}" alt="Logo FarmGo" class="max-w-24 max-h-24">
             </div>
 
+            {{-- Success Messages --}}
+            @if (session('success'))
+                <div class="mb-6 p-4 rounded-lg border bg-green-50 border-green-200">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 text-green-600 mt-0.5 mr-3" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Error Messages --}}
+            @if ($errors->any())
+                <div
+                    class="mb-6 p-4 rounded-lg border {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200' }}">
+                    <div class="flex items-start">
+                        <svg class="w-5 h-5 {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'text-red-600' : 'text-orange-600' }} mt-0.5 mr-3"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                            </path>
+                        </svg>
+                        <div class="flex-1">
+                            @foreach ($errors->all() as $error)
+                                <p
+                                    class="text-sm {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'text-red-700' : 'text-orange-700' }} font-medium">
+                                    {{ $error }}
+                                </p>
+                            @endforeach
+
+                                {{-- Link to clear lockout if account is locked --}}
+                                @if (($errors->has('email') && str_contains($errors->first('email'), 'terkunci')) || ($errors->has('password') && str_contains($errors->first('password'), 'terkunci')))
+                                    <p class="text-xs text-red-600 mt-2">
+                                        Tidak ingin menunggu?
+                                        <a href="{{ route('login.clear') }}"
+                                            class="underline hover:text-red-800 font-medium">Klik di sini untuk reset</a>
+                                    </p>
+                                @endif
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Login Form -->
             <form action="{{ route('login') }}" method="POST" class="space-y-5">
                 @csrf <!-- CSRF Token untuk melindungi aplikasi dari CSRF attack -->
@@ -34,8 +82,8 @@
                 <!-- Email Input -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="email" id="email" name="email" placeholder="Masukan Email"
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm transition duration-300"
+                    <input type="email" id="email" name="email" placeholder="Masukan Email" value="{{ old('email') }}"
+                        class="w-full px-4 py-3 rounded-lg border {{ $errors->has('email') ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' }} focus:outline-none focus:ring-2 placeholder-gray-400 text-sm transition duration-300"
                         required>
                 </div>
 
@@ -44,7 +92,7 @@
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <div class="relative">
                         <input type="password" id="password" name="password" placeholder="Masukan Password"
-                            class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 text-sm transition duration-300"
+                            class="w-full px-4 py-3 rounded-lg border {{ $errors->has('password') ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' }} focus:outline-none focus:ring-2 placeholder-gray-400 text-sm transition duration-300"
                             required>
 
                         <!-- Tombol untuk Toggle Password -->

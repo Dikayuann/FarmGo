@@ -99,6 +99,16 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get all notifications for the user's animals
+     */
+    public function notifications()
+    {
+        return Notifikasi::whereHas('animal', function ($query) {
+            $query->where('user_id', $this->id);
+        });
+    }
+
+    /**
      * Determine if user can access Filament admin panel
      * Only admin role can access
      */

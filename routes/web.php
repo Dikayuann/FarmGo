@@ -3,25 +3,36 @@
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\GoogleAuthController;
+use App\Http\Controllers\TernakController;
+use App\Http\Controllers\KesehatanController;
+use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
-//Route::get('/', function () {
-//    return view('welcome');
-//});
+
 
 Route::get('/', function () {
     return view('landing.index');
 });
 
-Route::get('/dashboard', fn() => view('dashboard'))->name('dashboard');
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
 
-Route::get('/ternak', fn() => view('ternak'))->name('ternak');
-Route::get('/kesehatan', fn() => view('kesehatan'))->name('kesehatan');
-Route::get('/reproduksi', fn() => view('reproduksi'))->name('reproduksi');
+    // Ternak Resource Routes
+    Route::resource('ternak', TernakController::class);
+
+    // Kesehatan Resource Routes
+    Route::resource('kesehatan', KesehatanController::class);
+
+    Route::get('/reproduksi', fn() => view('reproduksi'))->name('reproduksi');
+});
 
 Route::get('/login', [LoginController::class, 'view']);
 Route::post('/login', [LoginController::class, 'login'])->name('login');
+
+// Route untuk clear lockout (jika user terkunci)
+Route::get('/login/clear-lockout', [LoginController::class, 'clearLockout'])->name('login.clear');
 
 Route::get('/register', [RegisterController::class, 'view'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
@@ -30,13 +41,11 @@ Route::post('/register', [RegisterController::class, 'register'])->name('registe
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
-Route::get('/logout', function () {
+// Secure logout route with POST method
+Route::post('/logout', function () {
     Auth::logout();
-    return redirect('/login');  // Redirect ke halaman login setelah logout
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/login');
 })->name('logout');
-
-
-//Route::get('/login', function () {
-//    return view('login');
-//})->name('login');
 
