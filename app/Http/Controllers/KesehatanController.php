@@ -59,6 +59,20 @@ class KesehatanController extends Controller
     }
 
     /**
+     * Show the form for creating a new resource.
+     */
+    public function create(Request $request)
+    {
+        // Get user's animals for dropdown
+        $animals = Animal::where('user_id', Auth::id())
+            ->orderBy('nama_hewan')
+            ->get();
+
+        $animalId = $request->query('animal_id');
+        return view('kesehatan.create', compact('animals', 'animalId'));
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(StoreHealthRecordRequest $request)
@@ -68,7 +82,10 @@ class KesehatanController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
-        HealthRecord::create($request->validated());
+        $data = $request->validated();
+        $data['tanggal_pemeriksaan'] = \Carbon\Carbon::parse($request->tanggal_pemeriksaan)->format('Y-m-d H:i:s');
+
+        HealthRecord::create($data);
 
         return redirect()->route('kesehatan.index')
             ->with('success', 'Catatan kesehatan berhasil ditambahkan!');
@@ -84,6 +101,23 @@ class KesehatanController extends Controller
         })->with('animal')->findOrFail($id);
 
         return view('kesehatan.show', compact('healthRecord'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $healthRecord = HealthRecord::whereHas('animal', function ($query) {
+            $query->where('user_id', Auth::id());
+        })->with('animal')->findOrFail($id);
+
+        // Get user's animals for dropdown
+        $animals = Animal::where('user_id', Auth::id())
+            ->orderBy('nama_hewan')
+            ->get();
+
+        return view('kesehatan.edit', compact('healthRecord', 'animals'));
     }
 
     /**

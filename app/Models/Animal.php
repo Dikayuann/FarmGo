@@ -19,7 +19,7 @@ class Animal extends Model
         'tanggal_lahir',
         'jenis_kelamin',
         'berat_badan',
-        'status_kesehatan',
+        'status_ternak',
         'qr_url',
         'user_id',
         'perkawinan_id',
@@ -95,12 +95,12 @@ class Animal extends Model
     }
 
     /**
-     * Scope to filter by status kesehatan
+     * Scope to filter by status ternak
      */
     public function scopeByStatus($query, $status)
     {
         if ($status && $status !== 'all') {
-            return $query->where('status_kesehatan', $status);
+            return $query->where('status_ternak', $status);
         }
         return $query;
     }
@@ -125,5 +125,136 @@ class Animal extends Model
     public function healthRecords(): HasMany
     {
         return $this->hasMany(HealthRecord::class);
+    }
+
+    /**
+     * Get the mating record this animal was born from (if offspring)
+     */
+    public function perkawinan(): BelongsTo
+    {
+        return $this->belongsTo(Perkawinan::class, 'perkawinan_id');
+    }
+
+    /**
+     * Get all matings where this animal is the male parent
+     */
+    public function asJantan(): HasMany
+    {
+        return $this->hasMany(Perkawinan::class, 'jantan_id');
+    }
+
+    /**
+     * Get all matings where this animal is the female parent
+     */
+    public function asBetina(): HasMany
+    {
+        return $this->hasMany(Perkawinan::class, 'betina_id');
+    }
+
+    /**
+     * Get parent animals information through the mating record
+     */
+    public function getParentsAttribute(): ?array
+    {
+        if (!$this->perkawinan_id || !$this->perkawinan) {
+            return null;
+        }
+
+        return [
+            'jantan' => $this->perkawinan->jantan,
+            'betina' => $this->perkawinan->betina,
+            'mating_date' => $this->perkawinan->tanggal_perkawinan,
+            'method' => $this->perkawinan->metode_perkawinan,
+        ];
+    }
+
+    /**
+     * Check if this betina is eligible for breeding
+     */
+    public function isEligibleForBreeding(): bool
+    {
+        // Only betina can breed
+        if ($this->jenis_kelamin !== 'betina') {
+            return false;
+        }
+
+        // Get latest perkawinan
+        $latestPerkawinan = Perkawinan::where('betina_id', $this->id)
+            ->orderBy('tanggal_perkawinan', 'desc')
+            ->first();
+
+        if (!$latestPerkawinan) {
+            return true; // Never bred, eligible
+        }
+
+        // Check status
+        if ($latestPerkawinan->status_reproduksi === 'bunting') {
+            return false; // Pregnant, not eligible
+        }
+
+        if ($latestPerkawinan->status_reproduksi === 'melahirkan') {
+            // Check recovery period
+            $recoveryDays = match ($this->jenis_hewan) {
+                'sapi' => 60,
+                'kambing' => 45,
+                'domba' => 45,
+                default => 45,
+            };
+
+            if (!$latestPerkawinan->tanggal_melahirkan) {
+                return false; // No birth date, not eligible
+            }
+
+            $daysSinceBirth = now()->diffInDays($latestPerkawinan->tanggal_melahirkan);
+
+            if ($daysSinceBirth < $recoveryDays) {
+                return false; // Still in recovery
+            }
+        }
+
+        return true; // Eligible
+    }
+
+    /**
+     * Get breeding status message for this betina
+     */
+    public function getBreedingStatusMessage(): ?string
+    {
+        if ($this->jenis_kelamin !== 'betina') {
+            return null;
+        }
+
+        $latestPerkawinan = Perkawinan::where('betina_id', $this->id)
+            ->orderBy('tanggal_perkawinan', 'desc')
+            ->first();
+
+        if (!$latestPerkawinan) {
+            return 'Siap dikawinkan';
+        }
+
+        if ($latestPerkawinan->status_reproduksi === 'bunting') {
+            $sisaHari = $latestPerkawinan->sisa_hari ?? 0;
+            return "Sedang bunting (sisa {$sisaHari} hari)";
+        }
+
+        if ($latestPerkawinan->status_reproduksi === 'melahirkan') {
+            $recoveryDays = match ($this->jenis_hewan) {
+                'sapi' => 60,
+                'kambing' => 45,
+                'domba' => 45,
+                default => 45,
+            };
+
+            if ($latestPerkawinan->tanggal_melahirkan) {
+                $daysSinceBirth = now()->diffInDays($latestPerkawinan->tanggal_melahirkan);
+                $remainingDays = $recoveryDays - $daysSinceBirth;
+
+                if ($remainingDays > 0) {
+                    return "Masa pemulihan ({$remainingDays} hari lagi)";
+                }
+            }
+        }
+
+        return 'Siap dikawinkan';
     }
 }

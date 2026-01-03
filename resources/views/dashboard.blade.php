@@ -28,21 +28,21 @@
         <div
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
-                <p class="text-sm font-medium text-gray-500 mb-2">Perlu Cek <br>Kesehatan</p>
-                <h3 class="text-4xl font-bold text-gray-800">{{ $perluCekKesehatan }}</h3>
+                <p class="text-sm font-medium text-gray-500 mb-2">Ternak <br>Perkawinan</p>
+                <h3 class="text-4xl font-bold text-gray-800">{{ $ternakPerkawinan }}</h3>
             </div>
             <div
-                class="bg-orange-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-orange-200 shadow-lg">
+                class="bg-purple-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-purple-200 shadow-lg">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
                     </path>
                 </svg>
             </div>
         </div>
 
-        <div
-            class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
+        <a href="{{ route('reproduksi.index') }}"
+            class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition cursor-pointer">
             <div>
                 <p class="text-sm font-medium text-gray-500 mb-2">Reproduksi <br>Mendatang</p>
                 <h3 class="text-4xl font-bold text-gray-800">{{ $reproduksiMendatang }}</h3>
@@ -54,7 +54,7 @@
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
             </div>
-        </div>
+        </a>
 
         <div
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
@@ -96,28 +96,30 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="flex flex-col gap-6">
 
-        <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h3 class="font-medium text-lg text-gray-800 mb-6">Tugas Kesehatan Mendatang</h3>
-            
+
             @if($tugasKesehatan->count() > 0)
                 <div class="space-y-4">
                     @foreach($tugasKesehatan as $tugas)
-                        <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
+                        <div
+                            class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition cursor-pointer">
                             <div class="flex flex-col">
-                                <span class="font-bold text-gray-800">{{ $tugas->animal->kode_hewan }} - {{ $tugas->animal->nama_hewan }}</span>
+                                <span class="font-bold text-gray-800">{{ $tugas->animal->kode_hewan }} -
+                                    {{ $tugas->animal->nama_hewan }}</span>
                                 <span class="text-sm text-gray-500">{{ $tugas->jenis_pemeriksaan }}</span>
                             </div>
                             <div class="flex flex-col items-end gap-1">
                                 <span class="text-xs text-gray-500">
                                     {{ \Carbon\Carbon::parse($tugas->pemeriksaan_berikutnya)->format('d M Y') }}
                                 </span>
-                                
+
                                 @php
                                     // Hitung berapa hari lagi
                                     $daysUntil = \Carbon\Carbon::today()->diffInDays($tugas->pemeriksaan_berikutnya, false);
-                                    
+
                                     if ($daysUntil <= 3) {
                                         $badge = 'bg-red-500';
                                         $priority = 'Tinggi';
@@ -129,7 +131,7 @@
                                         $priority = 'Rendah';
                                     }
                                 @endphp
-                                
+
                                 <span class="{{ $badge }} text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm">
                                     {{ $priority }}
                                 </span>
@@ -142,26 +144,6 @@
                     <p>Tidak ada tugas kesehatan yang dijadwalkan</p>
                 </div>
             @endif
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
-            <h3 class="font-medium text-lg text-gray-800 mb-6">Notifikasi</h3>
-            <div class="space-y-4">
-
-                <div class="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
-                    <p class="font-semibold mb-1">Kode QR siap untuk dicetak</p>
-                    <p class="text-xs opacity-80">(15 hewan)</p>
-                </div>
-
-                <div class="p-4 bg-orange-50 text-orange-800 text-sm rounded-xl border border-orange-100">
-                    <p class="font-semibold mb-1">3 hewan memerlukan vaksinasi segera</p>
-                </div>
-
-                <div class="p-4 bg-blue-50 text-blue-800 text-sm rounded-xl border border-blue-100">
-                    <p class="font-semibold mb-1">Cek kehamilan dijadwalkan untuk 5 hewan</p>
-                </div>
-
-            </div>
         </div>
     </div>
 @endsection

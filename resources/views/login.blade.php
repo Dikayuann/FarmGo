@@ -6,12 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FarmGo Login</title>
     @vite('resources/css/app.css')
+{{--    <x-turnstile.scripts />--}}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
         }
     </style>
+
 </head>
 
 <body class="h-screen w-full bg-white">
@@ -77,6 +79,7 @@
 
             <!-- Login Form -->
             <form action="{{ route('login') }}" method="POST" class="space-y-5">
+{{--                <x-turnstile />--}}
                 @csrf <!-- CSRF Token untuk melindungi aplikasi dari CSRF attack -->
 
                 <!-- Email Input -->

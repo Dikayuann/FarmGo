@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Animal;
 use App\Models\HealthRecord;
+use App\Models\Perkawinan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -18,26 +19,20 @@ class DashboardController extends Controller
         // 1. Total Ternak milik user ini
         $totalTernak = Animal::where('user_id', $user->id)->count();
 
-        // 2. Ternak yang perlu cek kesehatan (status sakit atau peringatan)
-        $perluCekKesehatan = Animal::where('user_id', $user->id)
-            ->whereIn('status_kesehatan', ['Sakit', 'Peringatan'])
+        // 2. Ternak Hasil Perkawinan
+        $ternakPerkawinan = Animal::where('user_id', $user->id)
+            ->where('status_ternak', 'perkawinan')
             ->count();
 
-        // 3. Status Peternakan (berdasarkan persentase ternak sehat)
-        $ternakSehat = Animal::where('user_id', $user->id)
-            ->where('status_kesehatan', 'Sehat')
-            ->count();
-
-        $persenSehat = $totalTernak > 0 ? ($ternakSehat / $totalTernak) * 100 : 0;
-
+        // 3. Status Peternakan (berdasarkan total ternak dan reproduksi)
         if ($totalTernak === 0) {
             $statusPeternakan = '-';
-        } elseif ($persenSehat >= 80) {
+        } elseif ($totalTernak >= 20) {
+            $statusPeternakan = 'Berkembang';
+        } elseif ($totalTernak >= 10) {
             $statusPeternakan = 'Baik';
-        } elseif ($persenSehat >= 50) {
-            $statusPeternakan = 'Sedang';
         } else {
-            $statusPeternakan = 'Perlu Perhatian';
+            $statusPeternakan = 'Mulai Berkembang';
         }
 
         // 4. Data Populasi untuk Chart (6 bulan terakhir)
@@ -55,16 +50,18 @@ class DashboardController extends Controller
             ->with('animal') // Eager loading untuk menghindari N+1 query
             ->get();
 
-        // 6. Reproduksi Mendatang (untuk nanti, set 0 dulu)
-        $reproduksiMendatang = 0;
+        // 6. Reproduksi Mendatang (upcoming reminders in next 14 days)
+        $reproduksiMendatang = Perkawinan::byUser($user->id)
+            ->upcomingReminders(14)
+            ->count();
 
-        // 7. Data Reproduksi untuk Chart (untuk nanti, set array kosong dulu)
-        $reproductionData = [];
+        // 7. Data Reproduksi untuk Chart (success rate per month)
+        $reproductionData = $this->getReproductionSuccessRate($user->id);
 
         // Kirim semua data ke view
         return view('dashboard', compact(
             'totalTernak',
-            'perluCekKesehatan',
+            'ternakPerkawinan',
             'statusPeternakan',
             'populationData',
             'monthLabels',
@@ -72,6 +69,36 @@ class DashboardController extends Controller
             'tugasKesehatan',
             'reproduksiMendatang'
         ));
+    }
+
+    /**
+     * Get reproduction success rate for the last 5 months
+     */
+    private function getReproductionSuccessRate($userId)
+    {
+        $data = [];
+
+        for ($i = 4; $i >= 0; $i--) {
+            $startDate = Carbon::now()->subMonths($i)->startOfMonth();
+            $endDate = Carbon::now()->subMonths($i)->endOfMonth();
+
+            // Count total matings in this month
+            $totalMatings = Perkawinan::byUser($userId)
+                ->whereBetween('tanggal_perkawinan', [$startDate, $endDate])
+                ->count();
+
+            // Count successful births
+            $successfulBirths = Perkawinan::byUser($userId)
+                ->where('status_reproduksi', 'melahirkan')
+                ->whereBetween('tanggal_perkawinan', [$startDate, $endDate])
+                ->count();
+
+            // Calculate success rate as percentage
+            $successRate = $totalMatings > 0 ? round(($successfulBirths / $totalMatings) * 100) : 0;
+            $data[] = $successRate;
+        }
+
+        return $data;
     }
 
     /**

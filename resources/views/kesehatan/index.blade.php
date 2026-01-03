@@ -5,12 +5,10 @@
 
 @section('content')
     <div class="flex flex-col gap-6" x-data="{ 
-                    showCreateModal: false, 
-                    showViewModal: false, 
-                    showEditModal: false, 
-                    showDeleteModal: false, 
-                    currentRecord: null
-                }">
+                        showViewModal: false, 
+                        showDeleteModal: false, 
+                        currentRecord: null
+                    }">
         {{-- Success/Error Messages --}}
         @if(session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg">
@@ -90,13 +88,13 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <h2 class="text-2xl font-semibold text-gray-800">Riwayat Pemeriksaan Kesehatan</h2>
 
-            <button @click="showCreateModal = true"
+            <a href="{{ route('kesehatan.create') }}"
                 class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                 </svg>
                 <span>Tambah Catatan Kesehatan</span>
-            </button>
+            </a>
         </div>
 
         {{-- Filters --}}
@@ -251,15 +249,14 @@
                                                 </path>
                                             </svg>
                                         </button>
-                                        <button type="button"
-                                            @click="currentRecord = {{ json_encode($record) }}; showEditModal = true"
+                                        <a href="{{ route('kesehatan.edit', $record->id) }}"
                                             class="text-emerald-600 hover:text-emerald-700 transition" title="Edit">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
                                                 </path>
                                             </svg>
-                                        </button>
+                                        </a>
                                         <button type="button"
                                             @click="currentRecord = {{ json_encode($record) }}; showDeleteModal = true"
                                             class="text-red-500 hover:text-red-700 transition" title="Hapus">
@@ -301,9 +298,7 @@
         </div>
 
         {{-- Modals --}}
-        @include('kesehatan.modals.create')
         @include('kesehatan.modals.view')
-        @include('kesehatan.modals.edit')
         @include('kesehatan.modals.delete')
     </div>
 @endsection

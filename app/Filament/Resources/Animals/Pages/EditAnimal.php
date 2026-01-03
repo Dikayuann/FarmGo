@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Animals\Pages;
 
 use App\Filament\Resources\Animals\AnimalResource;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 
 class EditAnimal extends EditRecord
@@ -13,7 +14,14 @@ class EditAnimal extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            ViewAction::make(),
             DeleteAction::make(),
         ];
     }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
+    }
 }
+

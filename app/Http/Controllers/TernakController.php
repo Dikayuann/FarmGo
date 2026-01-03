@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Animal;
+use App\Models\Notifikasi;
 use App\Http\Requests\StoreAnimalRequest;
 use Illuminate\Support\Facades\Auth;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -33,7 +34,7 @@ class TernakController extends Controller
             'sapi' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'sapi')->count(),
             'kambing' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'kambing')->count(),
             'domba' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'domba')->count(),
-            'sehat' => Animal::where('user_id', Auth::id())->where('status_kesehatan', 'sehat')->count(),
+            'beli' => Animal::where('user_id', Auth::id())->where('status_ternak', 'beli')->count(),
         ];
 
         // Check if print all QR is requested
@@ -51,6 +52,15 @@ class TernakController extends Controller
     public function store(StoreAnimalRequest $request)
     {
         $data = $request->validated();
+        $user = Auth::user();
+
+        // Check if user can add more animals (quota limit)
+        if (!$user->canAddAnimal()) {
+            return back()->withErrors([
+                'error' => 'Anda telah mencapai batas maksimal 10 hewan untuk akun Trial. Upgrade ke Premium untuk menambah lebih banyak hewan!'
+            ])->with('show_upgrade_modal', true);
+        }
+
         $data['user_id'] = Auth::id();
 
         // Generate kode_hewan if not provided
@@ -62,30 +72,51 @@ class TernakController extends Controller
                 'domba' => 'D',
             ];
             $prefix = $prefixMap[$data['jenis_hewan']] ?? 'X';
+            $userId = Auth::id();
 
-            // Find last animal code with same prefix
-            $lastAnimal = Animal::where('user_id', Auth::id())
-                ->where('kode_hewan', 'like', "{$prefix}-%")
-                ->orderByRaw('CAST(SUBSTRING(kode_hewan, ' . (strlen($prefix) + 2) . ') AS UNSIGNED) DESC')
+            // Find last animal code with same prefix and user_id
+            // Format: PREFIX-USERID-SEQUENCE (e.g., SA-2-001)
+            $lastAnimal = Animal::where('user_id', $userId)
+                ->where('kode_hewan', 'like', "{$prefix}-{$userId}-%")
+                ->orderByRaw('CAST(SUBSTRING_INDEX(kode_hewan, "-", -1) AS UNSIGNED) DESC')
                 ->first();
 
             $number = 1;
             if ($lastAnimal) {
-                // Extract number after prefix and dash (e.g., "SA-001" -> 001)
+                // Extract number after last dash
                 $parts = explode('-', $lastAnimal->kode_hewan);
-                if (count($parts) == 2) {
-                    $lastNumber = (int) $parts[1];
-                    $number = $lastNumber + 1;
-                }
+                $number = (int) end($parts) + 1;
             }
 
-            $data['kode_hewan'] = $prefix . '-' . str_pad($number, 3, '0', STR_PAD_LEFT);
+            $data['kode_hewan'] = "{$prefix}-{$userId}-" . str_pad($number, 3, '0', STR_PAD_LEFT);
         }
 
         $animal = Animal::create($data);
 
         // Generate QR Code
         $this->generateQRCode($animal);
+
+        // Check if user is approaching quota limit and send notification
+        if (!$user->hasActivePremium()) {
+            $animalCount = $user->animals()->count();
+
+            // Send warning notification at 8/10 animals
+            if ($animalCount == 8) {
+                Notifikasi::create([
+                    'user_id' => $user->id,
+                    'animal_id' => $animal->id,
+                    'jenis_notifikasi' => 'quota_warning',
+                    'pesan' => '⚠️ Peringatan Kuota: Anda telah menggunakan 8 dari 10 kuota hewan Trial. Tersisa 2 slot lagi. Upgrade ke Premium untuk unlimited!',
+                    'tanggal_kirim' => now(),
+                    'status' => 'belum_dibaca',
+                ]);
+            }
+
+            // Show warning message at 9/10
+            if ($animalCount == 9) {
+                session()->flash('warning', 'Peringatan: Anda hanya memiliki 1 slot tersisa! Upgrade ke Premium untuk menambah lebih banyak hewan.');
+            }
+        }
 
         return redirect()->route('ternak.index')
             ->with('success', 'Hewan ternak berhasil ditambahkan!');
@@ -96,8 +127,25 @@ class TernakController extends Controller
      */
     public function show(string $id)
     {
-        $animal = Animal::where('user_id', Auth::id())->findOrFail($id);
-        return view('ternak.show', compact('animal'));
+        $animal = Animal::where('user_id', Auth::id())
+            ->with([
+                'healthRecords' => function ($query) {
+                    $query->orderBy('tanggal_pemeriksaan', 'desc');
+                },
+                'perkawinan' => function ($query) {
+                    $query->with(['jantan', 'betina']);
+                }
+            ])
+            ->findOrFail($id);
+
+        // Get health statistics
+        $healthStats = [
+            'total_checkups' => $animal->healthRecords->count(),
+            'latest_weight' => $animal->healthRecords->first()?->berat_badan ?? $animal->berat_badan,
+            'weight_change' => $this->calculateWeightChange($animal),
+        ];
+
+        return view('ternak.show', compact('animal', 'healthStats'));
     }
 
     /**
@@ -125,6 +173,28 @@ class TernakController extends Controller
 
         return redirect()->route('ternak.index')
             ->with('success', 'Hewan ternak berhasil dihapus!');
+    }
+
+    /**
+     * Calculate weight change between latest and previous record
+     */
+    private function calculateWeightChange(Animal $animal)
+    {
+        $records = $animal->healthRecords->sortByDesc('tanggal_pemeriksaan')->values();
+
+        if ($records->count() >= 2) {
+            $latest = $records->get(0)->berat_badan;
+            $previous = $records->get(1)->berat_badan;
+            return round($latest - $previous, 2);
+        }
+
+        if ($records->count() == 1) {
+            $latest = $records->get(0)->berat_badan;
+            $initial = $animal->berat_badan;
+            return round($latest - $initial, 2);
+        }
+
+        return 0;
     }
 
     /**

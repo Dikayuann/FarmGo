@@ -40,161 +40,258 @@
                 </div>
 
                 {{-- Modal Body --}}
-                <div class="bg-white px-6 py-5 max-h-[70vh] overflow-y-auto">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Animal Select --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_animal_id" class="block text-sm font-medium text-gray-700 mb-1">
-                                Hewan <span class="text-red-500">*</span>
-                            </label>
-                            <select id="edit_animal_id" name="animal_id" required :value="currentRecord?.animal_id"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg">
-                                <option value="">Pilih Hewan</option>
-                                @foreach ($animals as $animal)
-                                    <option value="{{ $animal->id }}"
-                                        :selected="currentRecord?.animal_id == {{ $animal->id }}">
-                                        {{ $animal->kode_hewan }} - {{ $animal->nama_hewan }}
-                                        ({{ ucfirst($animal->jenis_hewan) }})
+                <div class="bg-white px-6 py-5 max-h-[70vh] overflow-y-auto" x-data="{ showOptional: false }">
+                    {{-- Informasi Wajib --}}
+                    <div class="mb-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                            <i class="fa-solid fa-circle-info text-emerald-600 mr-2"></i>
+                            Informasi Wajib
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- Animal Select - Searchable --}}
+                            <div class="md:col-span-2" x-data="{
+                                open: false,
+                                search: '',
+                                selected: null,
+                                animals: {{ json_encode($animals->map(fn($a) => ['id' => $a->id, 'kode' => $a->kode_hewan, 'nama' => $a->nama_hewan, 'jenis' => ucfirst($a->jenis_hewan)])) }},
+                                get filteredAnimals() {
+                                    if (this.search === '') return this.animals;
+                                    return this.animals.filter(animal => 
+                                        animal.kode.toLowerCase().includes(this.search.toLowerCase()) ||
+                                        animal.nama.toLowerCase().includes(this.search.toLowerCase()) ||
+                                        animal.jenis.toLowerCase().includes(this.search.toLowerCase())
+                                    );
+                                },
+                                selectAnimal(animal) {
+                                    this.selected = animal;
+                                    this.open = false;
+                                    this.search = '';
+                                },
+                                init() {
+                                    // Set selected animal from currentRecord
+                                    this.$watch('$root.currentRecord', (record) => {
+                                        if (record && record.animal_id) {
+                                            this.selected = this.animals.find(a => a.id == record.animal_id);
+                                        }
+                                    });
+                                }
+                            }" @click.away="open = false">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    Hewan <span class="text-red-500">*</span>
+                                </label>
+
+                                {{-- Hidden input for form submission --}}
+                                <input type="hidden" name="animal_id" :value="selected?.id" required>
+
+                                {{-- Custom Select Button --}}
+                                <button type="button" @click="open = !open"
+                                    class="relative w-full bg-white border border-gray-300 rounded-lg shadow-sm pl-3 pr-10 py-2 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                    <span class="block truncate"
+                                        x-text="selected ? `${selected.kode} - ${selected.nama} (${selected.jenis})` : 'Pilih atau cari hewan...'"></span>
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                        <i class="fa-solid fa-chevron-down text-gray-400"></i>
+                                    </span>
+                                </button>
+
+                                {{-- Dropdown --}}
+                                <div x-show="open" x-transition
+                                    class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+
+                                    {{-- Search Input --}}
+                                    <div class="sticky top-0 bg-white px-2 py-2 border-b">
+                                        <input type="text" x-model="search" @click.stop
+                                            placeholder="Cari kode, nama, atau jenis..."
+                                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                    </div>
+
+                                    {{-- Animal List --}}
+                                    <template x-for="animal in filteredAnimals" :key="animal.id">
+                                        <div @click="selectAnimal(animal)"
+                                            class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-emerald-50 transition"
+                                            :class="selected?.id === animal.id ? 'bg-emerald-100' : ''">
+                                            <span class="block truncate"
+                                                :class="selected?.id === animal.id ? 'font-semibold' : 'font-normal'">
+                                                <span x-text="animal.kode"></span> -
+                                                <span x-text="animal.nama"></span>
+                                                (<span x-text="animal.jenis"></span>)
+                                            </span>
+                                            <span x-show="selected?.id === animal.id"
+                                                class="absolute inset-y-0 right-0 flex items-center pr-4 text-emerald-600">
+                                                <i class="fa-solid fa-check"></i>
+                                            </span>
+                                        </div>
+                                    </template>
+
+                                    {{-- No Results --}}
+                                    <div x-show="filteredAnimals.length === 0" class="px-3 py-2 text-gray-500 text-sm">
+                                        Tidak ada hewan yang ditemukan
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Tanggal Pemeriksaan --}}
+                            <div>
+                                <label for="edit_tanggal_pemeriksaan"
+                                    class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tanggal Pemeriksaan <span class="text-red-500">*</span>
+                                </label>
+                                <input type="date" id="edit_tanggal_pemeriksaan" name="tanggal_pemeriksaan" required
+                                    :value="currentRecord ? currentRecord.tanggal_pemeriksaan.substring(0, 10) : ''"
+                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                            </div>
+
+                            {{-- Jenis Pemeriksaan --}}
+                            <div>
+                                <label for="edit_jenis_pemeriksaan"
+                                    class="block text-sm font-medium text-gray-700 mb-1">
+                                    Jenis Pemeriksaan <span class="text-red-500">*</span>
+                                </label>
+                                <select id="edit_jenis_pemeriksaan" name="jenis_pemeriksaan" required
+                                    :value="currentRecord?.jenis_pemeriksaan"
+                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg">
+                                    <option value="">Pilih Jenis</option>
+                                    <option value="rutin" :selected="currentRecord?.jenis_pemeriksaan === 'rutin'">Rutin
                                     </option>
-                                @endforeach
-                            </select>
-                        </div>
+                                    <option value="darurat" :selected="currentRecord?.jenis_pemeriksaan === 'darurat'">
+                                        Darurat</option>
+                                    <option value="follow_up"
+                                        :selected="currentRecord?.jenis_pemeriksaan === 'follow_up'">Follow Up</option>
+                                </select>
+                            </div>
 
-                        {{-- Tanggal Pemeriksaan --}}
-                        <div>
-                            <label for="edit_tanggal_pemeriksaan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Tanggal Pemeriksaan <span class="text-red-500">*</span>
-                            </label>
-                            <input type="datetime-local" id="edit_tanggal_pemeriksaan" name="tanggal_pemeriksaan"
-                                required
-                                :value="currentRecord ? currentRecord.tanggal_pemeriksaan.replace(' ', 'T').substring(0, 16) : ''"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                            {{-- Berat Badan --}}
+                            <div>
+                                <label for="edit_berat_badan" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Berat Badan (kg) <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" id="edit_berat_badan" name="berat_badan" step="0.01" min="0"
+                                    required :value="currentRecord?.berat_badan" placeholder="Contoh: 350.5"
+                                    class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                            </div>
 
-                        {{-- Jenis Pemeriksaan --}}
-                        <div>
-                            <label for="edit_jenis_pemeriksaan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Jenis Pemeriksaan <span class="text-red-500">*</span>
-                            </label>
-                            <select id="edit_jenis_pemeriksaan" name="jenis_pemeriksaan" required
-                                :value="currentRecord?.jenis_pemeriksaan"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg">
-                                <option value="">Pilih Jenis</option>
-                                <option value="rutin" :selected="currentRecord?.jenis_pemeriksaan === 'rutin'">Rutin
-                                </option>
-                                <option value="darurat" :selected="currentRecord?.jenis_pemeriksaan === 'darurat'">
-                                    Darurat
-                                </option>
-                                <option value="follow_up" :selected="currentRecord?.jenis_pemeriksaan === 'follow_up'">
-                                    Follow Up</option>
-                            </select>
+                            {{-- Status Kesehatan --}}
+                            <div>
+                                <label for="edit_status_kesehatan" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Status Kesehatan <span class="text-red-500">*</span>
+                                </label>
+                                <select id="edit_status_kesehatan" name="status_kesehatan" required
+                                    :value="currentRecord?.status_kesehatan"
+                                    class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg">
+                                    <option value="">Pilih Status</option>
+                                    <option value="sehat" :selected="currentRecord?.status_kesehatan === 'sehat'">Sehat
+                                    </option>
+                                    <option value="sakit" :selected="currentRecord?.status_kesehatan === 'sakit'">Sakit
+                                    </option>
+                                    <option value="dalam_perawatan"
+                                        :selected="currentRecord?.status_kesehatan === 'dalam_perawatan'">Dalam
+                                        Perawatan</option>
+                                    <option value="sembuh" :selected="currentRecord?.status_kesehatan === 'sembuh'">
+                                        Sembuh</option>
+                                </select>
+                            </div>
                         </div>
+                    </div>
 
-                        {{-- Berat Badan --}}
-                        <div>
-                            <label for="edit_berat_badan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Berat Badan (kg) <span class="text-red-500">*</span>
-                            </label>
-                            <input type="number" id="edit_berat_badan" name="berat_badan" step="0.01" min="0" required
-                                :value="currentRecord?.berat_badan"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                    {{-- Divider --}}
+                    <div class="border-t border-gray-200 my-4"></div>
 
-                        {{-- Suhu Tubuh --}}
-                        <div>
-                            <label for="edit_suhu_tubuh" class="block text-sm font-medium text-gray-700 mb-1">
-                                Suhu Tubuh (°C)
-                            </label>
-                            <input type="number" id="edit_suhu_tubuh" name="suhu_tubuh" step="0.1" min="0" max="50"
-                                :value="currentRecord?.suhu_tubuh"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                    {{-- Informasi Tambahan (Opsional) - Collapsible --}}
+                    <div>
+                        <button type="button" @click="showOptional = !showOptional"
+                            class="w-full flex items-center justify-between text-sm font-semibold text-gray-700 hover:text-emerald-600 transition py-2">
+                            <span class="flex items-center">
+                                <i class="fa-solid fa-notes-medical text-emerald-600 mr-2"></i>
+                                Informasi Tambahan (Opsional)
+                            </span>
+                            <i class="fa-solid transition-transform duration-200"
+                                :class="showOptional ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                        </button>
 
-                        {{-- Status Kesehatan --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_status_kesehatan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Status Kesehatan <span class="text-red-500">*</span>
-                            </label>
-                            <select id="edit_status_kesehatan" name="status_kesehatan" required
-                                :value="currentRecord?.status_kesehatan"
-                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg">
-                                <option value="">Pilih Status</option>
-                                <option value="sehat" :selected="currentRecord?.status_kesehatan === 'sehat'">Sehat
-                                </option>
-                                <option value="sakit" :selected="currentRecord?.status_kesehatan === 'sakit'">Sakit
-                                </option>
-                                <option value="dalam_perawatan"
-                                    :selected="currentRecord?.status_kesehatan === 'dalam_perawatan'">Dalam Perawatan
-                                </option>
-                                <option value="sembuh" :selected="currentRecord?.status_kesehatan === 'sembuh'">Sembuh
-                                </option>
-                            </select>
-                        </div>
+                        <div x-show="showOptional" x-collapse class="mt-3">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {{-- Suhu Tubuh --}}
+                                <div>
+                                    <label for="edit_suhu_tubuh" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Suhu Tubuh (°C)
+                                    </label>
+                                    <input type="number" id="edit_suhu_tubuh" name="suhu_tubuh" step="0.1" min="0"
+                                        max="50" :value="currentRecord?.suhu_tubuh" placeholder="Contoh: 38.5"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                </div>
 
-                        {{-- Gejala --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_gejala" class="block text-sm font-medium text-gray-700 mb-1">
-                                Gejala / Keluhan
-                            </label>
-                            <textarea id="edit_gejala" name="gejala" rows="2" x-text="currentRecord?.gejala"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
-                        </div>
+                                {{-- Biaya --}}
+                                <div>
+                                    <label for="edit_biaya" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Biaya Pemeriksaan (Rp)
+                                    </label>
+                                    <input type="number" id="edit_biaya" name="biaya" step="1000" min="0"
+                                        :value="currentRecord?.biaya" placeholder="Contoh: 150000"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                </div>
 
-                        {{-- Diagnosis --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_diagnosis" class="block text-sm font-medium text-gray-700 mb-1">
-                                Diagnosis
-                            </label>
-                            <textarea id="edit_diagnosis" name="diagnosis" rows="2" x-text="currentRecord?.diagnosis"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
-                        </div>
+                                {{-- Gejala --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_gejala" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Gejala / Keluhan
+                                    </label>
+                                    <textarea id="edit_gejala" name="gejala" rows="2" x-text="currentRecord?.gejala"
+                                        placeholder="Contoh: Nafsu makan menurun, terlihat lemas"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                                </div>
 
-                        {{-- Tindakan --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_tindakan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Tindakan / Treatment
-                            </label>
-                            <textarea id="edit_tindakan" name="tindakan" rows="2" x-text="currentRecord?.tindakan"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
-                        </div>
+                                {{-- Diagnosis --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_diagnosis" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Diagnosis
+                                    </label>
+                                    <textarea id="edit_diagnosis" name="diagnosis" rows="2"
+                                        x-text="currentRecord?.diagnosis"
+                                        placeholder="Diagnosis dari dokter hewan (jika ada)"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                                </div>
 
-                        {{-- Obat --}}
-                        <div>
-                            <label for="edit_obat" class="block text-sm font-medium text-gray-700 mb-1">
-                                Obat
-                            </label>
-                            <input type="text" id="edit_obat" name="obat" :value="currentRecord?.obat"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                                {{-- Tindakan --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_tindakan" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Tindakan / Treatment
+                                    </label>
+                                    <textarea id="edit_tindakan" name="tindakan" rows="2"
+                                        x-text="currentRecord?.tindakan"
+                                        placeholder="Tindakan yang diberikan (jika ada)"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                                </div>
 
-                        {{-- Biaya --}}
-                        <div>
-                            <label for="edit_biaya" class="block text-sm font-medium text-gray-700 mb-1">
-                                Biaya (Rp)
-                            </label>
-                            <input type="number" id="edit_biaya" name="biaya" step="0.01" min="0"
-                                :value="currentRecord?.biaya"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                                {{-- Obat --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_obat" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Obat yang Diberikan
+                                    </label>
+                                    <input type="text" id="edit_obat" name="obat" :value="currentRecord?.obat"
+                                        placeholder="Contoh: Antibiotik, Vitamin, dll"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                </div>
 
-                        {{-- Pemeriksaan Berikutnya --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_pemeriksaan_berikutnya"
-                                class="block text-sm font-medium text-gray-700 mb-1">
-                                Jadwal Pemeriksaan Berikutnya
-                            </label>
-                            <input type="date" id="edit_pemeriksaan_berikutnya" name="pemeriksaan_berikutnya"
-                                :value="currentRecord?.pemeriksaan_berikutnya"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                        </div>
+                                {{-- Pemeriksaan Berikutnya --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_pemeriksaan_berikutnya"
+                                        class="block text-sm font-medium text-gray-700 mb-1">
+                                        Jadwal Pemeriksaan Berikutnya
+                                    </label>
+                                    <input type="date" id="edit_pemeriksaan_berikutnya" name="pemeriksaan_berikutnya"
+                                        :value="currentRecord?.pemeriksaan_berikutnya"
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
+                                </div>
 
-                        {{-- Catatan --}}
-                        <div class="md:col-span-2">
-                            <label for="edit_catatan" class="block text-sm font-medium text-gray-700 mb-1">
-                                Catatan Tambahan
-                            </label>
-                            <textarea id="edit_catatan" name="catatan" rows="2" x-text="currentRecord?.catatan"
-                                class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                                {{-- Catatan --}}
+                                <div class="md:col-span-2">
+                                    <label for="edit_catatan" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Catatan Tambahan
+                                    </label>
+                                    <textarea id="edit_catatan" name="catatan" rows="3" x-text="currentRecord?.catatan"
+                                        placeholder="Catatan lain yang perlu dicatat..."
+                                        class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"></textarea>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

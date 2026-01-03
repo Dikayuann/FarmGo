@@ -78,6 +78,11 @@ class GoogleAuthController extends Controller
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {
+            // Log the actual error for debugging
+            \Log::error('Google OAuth Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // Handle error, redirect ke login dengan error message
             return redirect()->route('login')->withErrors([
                 'google' => 'Gagal login dengan Google. Silakan coba lagi.'

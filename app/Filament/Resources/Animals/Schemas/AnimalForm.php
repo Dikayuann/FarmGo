@@ -13,27 +13,72 @@ class AnimalForm
     {
         return $schema
             ->components([
-                TextInput::make('code')
-                    ->required(),
-                TextInput::make('name')
-                    ->required(),
-                Select::make('type')
-                    ->options(['Sapi' => 'Sapi', 'Kambing' => 'Kambing', 'Domba' => 'Domba', 'Banteng' => 'Banteng'])
-                    ->required(),
-                DatePicker::make('birth_date')
-                    ->required(),
-                TextInput::make('weight')
+                TextInput::make('kode_hewan')
+                    ->label('Kode Hewan')
                     ->required()
-                    ->numeric(),
-                Select::make('condition')
+                    ->unique(ignoreRecord: true)
+                    ->maxLength(255),
+
+                TextInput::make('nama_hewan')
+                    ->label('Nama Hewan')
+                    ->required()
+                    ->maxLength(255),
+
+                Select::make('jenis_hewan')
+                    ->label('Jenis Hewan')
                     ->options([
-            'Sangat Baik' => 'Sangat baik',
-            'Baik' => 'Baik',
-            'Cukup' => 'Cukup',
-            'Kurang' => 'Kurang',
-            'Sakit' => 'Sakit',
-        ])
-                    ->required(),
+                        'sapi' => 'Sapi',
+                        'kambing' => 'Kambing',
+                        'domba' => 'Domba',
+                    ])
+                    ->required()
+                    ->native(false),
+
+                TextInput::make('ras_hewan')
+                    ->label('Ras Hewan')
+                    ->required()
+                    ->maxLength(255),
+
+                DatePicker::make('tanggal_lahir')
+                    ->label('Tanggal Lahir')
+                    ->required()
+                    ->native(false)
+                    ->maxDate(now()),
+
+                Select::make('jenis_kelamin')
+                    ->label('Jenis Kelamin')
+                    ->options([
+                        'jantan' => 'Jantan',
+                        'betina' => 'Betina',
+                    ])
+                    ->required()
+                    ->native(false),
+
+                TextInput::make('berat_badan')
+                    ->label('Berat Badan (kg)')
+                    ->required()
+                    ->numeric()
+                    ->suffix('kg')
+                    ->minValue(0),
+
+                Select::make('status_ternak')
+                    ->label('Status Ternak')
+                    ->options([
+                        'sehat' => 'Sehat',
+                        'sakit' => 'Sakit',
+                        'karantina' => 'Karantina',
+                    ])
+                    ->default('sehat')
+                    ->required()
+                    ->native(false),
+
+                Select::make('user_id')
+                    ->label('Pemilik')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->required()
+                    ->helperText('Pilih pemilik hewan'),
             ]);
     }
 }

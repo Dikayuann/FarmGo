@@ -36,7 +36,7 @@ class StoreAnimalRequest extends FormRequest
             'tanggal_lahir' => 'required|date|before_or_equal:today',
             'jenis_kelamin' => 'required|in:jantan,betina',
             'berat_badan' => 'required|numeric|min:0|max:9999.99',
-            'status_kesehatan' => 'required|in:sehat,sakit,karantina',
+            'status_ternak' => 'required|in:beli,perkawinan,hadiah',
         ];
     }
 
@@ -53,7 +53,7 @@ class StoreAnimalRequest extends FormRequest
             'tanggal_lahir' => 'tanggal lahir',
             'j enis_kelamin' => 'jenis kelamin',
             'berat_badan' => 'berat badan',
-            'status_kesehatan' => 'status kesehatan',
+            'status_ternak' => 'status ternak',
         ];
     }
 }

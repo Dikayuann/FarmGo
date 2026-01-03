@@ -13,7 +13,12 @@ return new class extends Migration {
         Schema::create('notifikasis', function (Blueprint $table) {
             $table->id();
             $table->foreignId('animal_id')
+                ->nullable()
                 ->constrained('animals')
+                ->onDelete('cascade');
+            $table->foreignId('perkawinan_id')
+                ->nullable()
+                ->constrained('perkawinans')
                 ->onDelete('cascade');
             $table->enum('jenis_notifikasi', ['vaksin', 'reproduksi', 'kesehatan', 'umum']);
             $table->text('pesan');

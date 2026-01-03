@@ -25,7 +25,59 @@ Route::middleware(['auth'])->group(function () {
     // Kesehatan Resource Routes
     Route::resource('kesehatan', KesehatanController::class);
 
-    Route::get('/reproduksi', fn() => view('reproduksi'))->name('reproduksi');
+    // Reproduksi Resource Routes
+    Route::resource('reproduksi', App\Http\Controllers\ReproduksiController::class);
+    Route::get('/reproduksi/{perkawinan}/add-offspring', [App\Http\Controllers\ReproduksiController::class, 'addOffspring'])
+        ->name('reproduksi.add-offspring');
+    Route::post('/reproduksi/{perkawinan}/offspring', [App\Http\Controllers\ReproduksiController::class, 'storeOffspring'])
+        ->name('reproduksi.store-offspring');
+
+    // Heat Detection Routes
+    Route::resource('heat-detection', App\Http\Controllers\HeatDetectionController::class);
+
+
+    // Langganan Routes
+    Route::get('/langganan', [App\Http\Controllers\LanggananController::class, 'index'])->name('langganan');
+    Route::get('/langganan/checkout/{package}', [App\Http\Controllers\LanggananController::class, 'showCheckout'])->name('langganan.checkout');
+    Route::post('/langganan/payment', [App\Http\Controllers\LanggananController::class, 'createPayment'])->name('langganan.payment');
+    Route::post('/langganan/trial', [App\Http\Controllers\LanggananController::class, 'activateTrial'])->name('langganan.trial');
+    Route::get('/langganan/pending/{orderId}', [App\Http\Controllers\LanggananController::class, 'showPendingPayment'])->name('langganan.pending');
+    Route::post('/langganan/check-status/{orderId}', [App\Http\Controllers\LanggananController::class, 'checkPaymentStatus'])->name('langganan.check-status');
+    Route::get('/langganan/history', [App\Http\Controllers\LanggananController::class, 'paymentHistory'])->name('langganan.history');
+    Route::post('/langganan/cancel', [App\Http\Controllers\LanggananController::class, 'cancelSubscription'])->name('langganan.cancel');
+
+    // Notification Routes
+    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.mark-read');
+    Route::post('/notifications/read-all', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications/unread-count', [App\Http\Controllers\NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+    Route::get('/api/notifications/latest-langganan', [App\Http\Controllers\NotificationController::class, 'getLatestLanggananNotification'])->name('notifications.latest-langganan');
+
+    // Settings Routes
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/profile', [App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.update-profile');
+    Route::post('/settings/password', [App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.update-password');
+    Route::post('/settings/set-password', [App\Http\Controllers\SettingsController::class, 'setPassword'])->name('settings.set-password');
+    Route::post('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'updateAvatar'])->name('settings.update-avatar');
+    Route::delete('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'deleteAvatar'])->name('settings.delete-avatar');
+
+    // AI Assistant Routes
+    Route::post('/ai-assistant/chat', [App\Http\Controllers\AiAssistantController::class, 'chat'])->name('ai-assistant.chat');
+
+    // Export Routes
+    Route::get('/ekspor', [App\Http\Controllers\ExportController::class, 'index'])->name('ekspor.index');
+    Route::post('/ekspor/animals', [App\Http\Controllers\ExportController::class, 'exportAnimals'])->name('ekspor.animals');
+    Route::post('/ekspor/health-records', [App\Http\Controllers\ExportController::class, 'exportHealthRecords'])->name('ekspor.health-records');
+    Route::post('/ekspor/reproduction', [App\Http\Controllers\ExportController::class, 'exportReproduction'])->name('ekspor.reproduction');
+    Route::post('/ekspor/comprehensive', [App\Http\Controllers\ExportController::class, 'exportComprehensive'])->name('ekspor.comprehensive');
+
+    // Settings Routes
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/profile', [App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.update-profile');
+    Route::post('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'updateAvatar'])->name('settings.update-avatar');
+    Route::delete('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'deleteAvatar'])->name('settings.delete-avatar');
+    Route::post('/settings/password', [App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.update-password');
+    Route::post('/settings/set-password', [App\Http\Controllers\SettingsController::class, 'setPassword'])->name('settings.set-password');
 });
 
 Route::get('/login', [LoginController::class, 'view']);
@@ -48,4 +100,21 @@ Route::post('/logout', function () {
     request()->session()->regenerateToken();
     return redirect('/login');
 })->name('logout');
+
+// Midtrans callback (no auth required, called by Midtrans server)
+Route::post('/langganan/callback', [App\Http\Controllers\LanggananController::class, 'handleCallback'])->name('langganan.callback');
+
+// Admin-only routes - Protected with admin middleware
+Route::middleware(['auth', 'admin'])->group(function () {
+    // Admin backup download route
+    Route::get('/admin/download-backup/{file}', function ($file) {
+        $path = storage_path('app/backups/' . $file);
+
+        if (!file_exists($path)) {
+            abort(404, 'Backup file not found');
+        }
+
+        return response()->download($path);
+    })->name('filament.admin.download-backup');
+});
 

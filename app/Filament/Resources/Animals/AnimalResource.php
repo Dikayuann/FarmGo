@@ -6,6 +6,7 @@ use App\Filament\Resources\Animals\Pages\CreateAnimal;
 use App\Filament\Resources\Animals\Pages\EditAnimal;
 use App\Filament\Resources\Animals\Pages\ListAnimals;
 use App\Filament\Resources\Animals\Schemas\AnimalForm;
+use App\Filament\Resources\Animals\Schemas\AnimalInfolist;
 use App\Filament\Resources\Animals\Tables\AnimalsTable;
 use App\Models\Animal;
 use BackedEnum;
@@ -20,11 +21,22 @@ class AnimalResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $navigationLabel = 'Hewan';
+
+    protected static ?string $modelLabel = 'Hewan';
+
+    protected static ?string $pluralModelLabel = 'Hewan';
+
+    protected static ?string $recordTitleAttribute = 'nama_hewan';
 
     public static function form(Schema $schema): Schema
     {
         return AnimalForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return AnimalInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -39,11 +51,19 @@ class AnimalResource extends Resource
         ];
     }
 
+    public static function getWidgets(): array
+    {
+        return [
+            Widgets\AnimalsStatsOverview::class,
+        ];
+    }
+
     public static function getPages(): array
     {
         return [
             'index' => ListAnimals::route('/'),
             'create' => CreateAnimal::route('/create'),
+            'view' => Pages\ViewAnimal::route('/{record}'),
             'edit' => EditAnimal::route('/{record}/edit'),
         ];
     }

@@ -78,17 +78,17 @@
                 <span
                     class="absolute bottom-0 left-0 w-0 h-0.5 bg-lime-600 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <a href="#" class="hover:text-lime-600 transition duration-300 relative group">
+            <a href="#tentang" class="hover:text-lime-600 transition duration-300 relative group">
                 Tentang
                 <span
                     class="absolute bottom-0 left-0 w-0 h-0.5 bg-lime-600 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <a href="#" class="hover:text-lime-600 transition duration-300 relative group">
+            <a href="#layanan" class="hover:text-lime-600 transition duration-300 relative group">
                 Layanan
                 <span
                     class="absolute bottom-0 left-0 w-0 h-0.5 bg-lime-600 group-hover:w-full transition-all duration-300"></span>
             </a>
-            <a href="#" class="hover:text-lime-600 transition duration-300 relative group">
+            <a href="#kontak" class="hover:text-lime-600 transition duration-300 relative group">
                 Kontak
                 <span
                     class="absolute bottom-0 left-0 w-0 h-0.5 bg-lime-600 group-hover:w-full transition-all duration-300"></span>
@@ -184,7 +184,7 @@
         </div>
     </section>
 
-    <section class="py-24 px-6 md:px-12 bg-white">
+    <section id="tentang" class="py-24 px-6 md:px-12 bg-white">
         <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
 
             <div class="space-y-6">
@@ -304,7 +304,7 @@
 
 
 
-    <section class="py-16 px-6 md:px-12 bg-white">
+    <section id="layanan" class="py-16 px-6 md:px-12 bg-white">
         <div class="max-w-7xl mx-auto">
             <h2 class="text-3xl font-bold text-gray-900 mb-2" data-aos="fade-down">Semua Kebutuhan Manajemen Peternakan
             </h2>
@@ -355,7 +355,7 @@
                         <div class="text-green-600 mb-3">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
                                 </path>
                             </svg>
                         </div>
@@ -383,14 +383,14 @@
                     <span
                         class="bg-blue-100 text-blue-600 text-xs font-bold px-3 py-1 rounded-full uppercase">Trial</span>
                     <h3 class="text-4xl font-bold text-gray-900 mt-4 mb-2">Gratis<span
-                            class="text-lg font-normal text-gray-500">/30 hari</span></h3>
+                            class="text-lg font-normal text-gray-500">/7 hari</span></h3>
                     <p class="text-gray-500 text-sm mb-6">Sempurna untuk peternakan kecil</p>
                     <ul class="text-left space-y-3 mb-8 text-sm text-gray-600">
-                        <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Hingga 50 Ternak</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Hingga 10 Ternak</li>
                         <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Catat Kesehatan Dasar
                         </li>
                         <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Pembaruan Manual</li>
-                        <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Akses Web & Mobile</li>
+                        <li class="flex items-center gap-2"><span class="text-blue-500">✓</span> Akses Web</li>
                     </ul>
                     <a href="{{ route('login') }}"
                         class="block w-full py-3 border-2 border-blue-500 text-blue-500 rounded-lg font-semibold hover:bg-blue-50 transition">Coba
@@ -412,8 +412,6 @@
                         <li class="flex items-center gap-2"><span class="text-blue-200">✓</span> Riwayat Kesehatan
                             Lengkap</li>
                         <li class="flex items-center gap-2"><span class="text-blue-200">✓</span> Notifikasi Reproduksi
-                        </li>
-                        <li class="flex items-center gap-2"><span class="text-blue-200">✓</span> Akses Multi Pengguna
                         </li>
                         <li class="flex items-center gap-2"><span class="text-blue-200">✓</span> Analisis & Laporan</li>
                         <li class="flex items-center gap-2"><span class="text-blue-200">✓</span> Dukungan Prioritas</li>
@@ -496,7 +494,7 @@
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-800 text-lg">Tjandra Mangkualam</h4>
-                            <p class="text-xs text-slate-500">Peternak Ayam Petelur</p>
+                            <p class="text-xs text-slate-500">Peternak Kambing</p>
                         </div>
                         <div class="ml-auto text-amber-400 text-sm">★★★★★</div>
                     </div>
@@ -524,7 +522,7 @@
     </section>
 
     <!-- Contact Section -->
-    <section id="contact" class="py-20 px-6 md:px-12 bg-slate-50">
+    <section id="kontak" class="py-20 px-6 md:px-12 bg-slate-50">
         <div class="max-w-7xl mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl overflow-hidden shadow-2xl shadow-emerald-500/20 grid md:grid-cols-2"
             data-aos="fade-down" data-aos-duration="1000">
             <div class="hidden md:block relative">

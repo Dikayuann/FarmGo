@@ -23,7 +23,7 @@ class StoreHealthRecordRequest extends FormRequest
     {
         return [
             'animal_id' => 'required|exists:animals,id',
-            'tanggal_pemeriksaan' => 'required|date',
+            'tanggal_pemeriksaan' => 'required|date|before_or_equal:now',
             'jenis_pemeriksaan' => 'required|in:rutin,darurat,follow_up',
             'berat_badan' => 'required|numeric|min:0',
             'suhu_tubuh' => 'nullable|numeric|min:0|max:50',

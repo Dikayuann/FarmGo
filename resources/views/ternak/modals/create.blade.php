@@ -101,23 +101,22 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">
                                 Berat Badan (kg) <span class="text-red-500">*</span>
                             </label>
-                            <input type="number" name="berat_badan" required step="0.01" min="0"
-                                x-model="berat_badan"
+                            <input type="number" name="berat_badan" required step="0.01" min="0" x-model="berat_badan"
                                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white"
                                 placeholder="Contoh: 250.5">
                         </div>
 
-                        {{-- Status Kesehatan --}}
+                        {{-- Status Ternak --}}
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                                Status Kesehatan <span class="text-red-500">*</span>
+                                Status Ternak <span class="text-red-500">*</span>
                             </label>
-                            <select name="status_kesehatan" required x-model="status_kesehatan"
+                            <select name="status_ternak" required x-model="status_ternak"
                                 class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
                                 <option value="" selected>Pilih Status</option>
-                                <option value="sehat">Sehat</option>
-                                <option value="sakit">Sakit</option>
-                                <option value="karantina">Karantina</option>
+                                <option value="beli">Beli</option>
+                                <option value="perkawinan">Perkawinan</option>
+                                <option value="hadiah">Hadiah</option>
                             </select>
                         </div>
                     </div>
@@ -182,14 +181,14 @@
     function updateBreedOptions() {
         const jenisSelect = document.querySelector('select[name="jenis_hewan"]');
         const rasSelect = document.getElementById('ras_hewan_create');
-        
+
         if (!jenisSelect || !rasSelect) return;
-        
+
         const selectedJenis = jenisSelect.value;
-        
+
         // Clear current options
         rasSelect.innerHTML = '<option value="">Pilih Ras</option>';
-        
+
         // Add new options based on selected jenis
         if (selectedJenis && window.breedOptions[selectedJenis]) {
             window.breedOptions[selectedJenis].forEach(breed => {

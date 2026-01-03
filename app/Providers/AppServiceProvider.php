@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Auth;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +21,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Share notification count with all views
+        View::composer('*', function ($view) {
+            if (Auth::check()) {
+                $view->with('notificationCount', Auth::user()->notifications()->where('status', 'belum_dibaca')->count());
+            }
+        });
     }
 }
