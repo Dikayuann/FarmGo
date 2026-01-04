@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Auth;
@@ -27,5 +28,10 @@ class AppServiceProvider extends ServiceProvider
                 $view->with('notificationCount', Auth::user()->notifications()->where('status', 'belum_dibaca')->count());
             }
         });
+
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
+
 }
