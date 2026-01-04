@@ -27,7 +27,7 @@
                                 class="font-semibold">{{ $animal->kode_hewan }}</span></p>
                     </div>
                     <div class="flex gap-3">
-                        <button onclick="document.getElementById('editModal').classList.remove('hidden')"
+                        <button onclick="openEditModal({{ json_encode($animal) }})"
                             class="inline-flex items-center gap-2 bg-white text-emerald-600 px-4 py-2 rounded-lg transition font-medium shadow-sm hover:bg-emerald-50">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -286,7 +286,7 @@
                             <p class="text-gray-600 mb-1">Status:</p>
                             <span
                                 class="px-3 py-1 text-xs font-semibold rounded-full 
-                                                                                            {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
+                                                                                                    {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
                 ($animal->perkawinan->status_reproduksi === 'bunting' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
                                 {{ ucfirst($animal->perkawinan->status_reproduksi) }}
                             </span>
