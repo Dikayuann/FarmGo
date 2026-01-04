@@ -51,7 +51,7 @@
                                 <div class="bg-white p-4 rounded-lg border-4 border-emerald-500 inline-block mb-4">
                                     <img src="{{ $animal->qr_url }}" alt="QR Code" class="w-48 h-48">
                                 </div>
-                                <button @click="showScanModal = true"
+                                <button onclick="openScanModal()"
                                     class="w-full inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition font-medium shadow-sm">
                                     <i class="fa-solid fa-camera text-sm mr-2"></i>
                                     <span>Pindai QR</span>
@@ -286,7 +286,7 @@
                             <p class="text-gray-600 mb-1">Status:</p>
                             <span
                                 class="px-3 py-1 text-xs font-semibold rounded-full 
-                                                                                    {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
+                                                                                            {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
                 ($animal->perkawinan->status_reproduksi === 'bunting' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
                                 {{ ucfirst($animal->perkawinan->status_reproduksi) }}
                             </span>

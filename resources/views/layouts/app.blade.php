@@ -12,6 +12,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
         }
@@ -186,7 +190,8 @@
                             </div>
                             <div class="max-h-96 overflow-y-auto">
                                 @forelse(Auth::user()->notifications()->orderBy('created_at', 'desc')->take(5)->get() as $notification)
-                                    <a href="{{ route('notifications.index') }}" class="block p-4 hover:bg-gray-50 transition border-b border-gray-100">
+                                    <a href="{{ route('notifications.index') }}"
+                                        class="block p-4 hover:bg-gray-50 transition border-b border-gray-100">
                                         <div class="flex items-start gap-3">
                                             <div class="shrink-0">
                                                 @if($notification->jenis_notifikasi == 'vaksin')
@@ -227,8 +232,7 @@
                                                         <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor"
                                                             viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
-                                                                stroke-width="2"
-                                                                d="M5 13l4 4L19 7"></path>
+                                                                stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                         </svg>
                                                     </div>
                                                 @else
@@ -269,7 +273,8 @@
                             </div>
                             @if($notificationCount > 0)
                                 <div class="p-3 border-t border-gray-200 text-center">
-                                    <a href="{{ route('notifications.index') }}" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua
+                                    <a href="{{ route('notifications.index') }}"
+                                        class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua
                                         Notifikasi</a>
                                 </div>
                             @endif

@@ -1,23 +1,14 @@
 {{-- Scan QR Modal --}}
-<div x-show="showScanModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
-    role="dialog" aria-modal="true" @open-scan.window="showScanModal = true">
+<div id="scanModal" class="fixed inset-0 z-50 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog"
+    aria-modal="true">
 
     {{-- Background overlay --}}
-    <div x-show="showScanModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-        x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-        x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-        @click="showScanModal = false; stopScanner()"
-        class="fixed inset-0 bg-gray-900/90 backdrop-blur-sm transition-opacity"></div>
+    <div onclick="closeScanModal()" class="fixed inset-0 bg-gray-900/90 backdrop-blur-sm transition-opacity"></div>
 
     {{-- Modal container --}}
     <div class="flex min-h-full items-center justify-center p-4">
         {{-- Modal content --}}
-        <div x-show="showScanModal" x-transition:enter="ease-out duration-300"
-            x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-            x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100 scale-100"
-            x-transition:leave-end="opacity-0 scale-95" @click.stop
-            x-init="$watch('showScanModal', value => { if(value) startScanner(); else stopScanner(); })"
-            class="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
+        <div onclick="event.stopPropagation()" class="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
 
             {{-- Modal Header --}}
             <div class="bg-blue-600 px-6 py-4">
@@ -26,8 +17,7 @@
                         <i class="fa-solid fa-camera text-white text-xl"></i>
                         <h3 class="text-lg font-semibold text-white">Pindai QR Code</h3>
                     </div>
-                    <button type="button" @click="showScanModal = false; stopScanner()"
-                        class="text-white/80 hover:text-white transition">
+                    <button type="button" onclick="closeScanModal()" class="text-white/80 hover:text-white transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M6 18L18 6M6 6l12 12"></path>
@@ -88,7 +78,7 @@
                     <i class="fa-solid fa-camera-rotate"></i>
                     <span>Ganti Kamera</span>
                 </button>
-                <button type="button" @click="showScanModal = false; stopScanner()"
+                <button type="button" onclick="closeScanModal()"
                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg">
                     Tutup
                 </button>
@@ -97,8 +87,14 @@
     </div>
 </div>
 
-<style>
-    [x-cloak] {
-        display: none !important;
+<script>
+    function openScanModal() {
+        document.getElementById('scanModal').classList.remove('hidden');
+        startScanner();
     }
-</style>
+
+    function closeScanModal() {
+        document.getElementById('scanModal').classList.add('hidden');
+        stopScanner();
+    }
+</script>

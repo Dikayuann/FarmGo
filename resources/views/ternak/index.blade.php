@@ -5,20 +5,20 @@
 
 @section('content')
     <div class="flex flex-col gap-6" x-data="{ 
-                                    showCreateModal: false, 
-                                    showQRModal: false, 
-                                    showEditModal: false, 
-                                    showDeleteModal: false, 
-                                    showScanModal: false, 
-                                    currentAnimal: null,
-                                    nama_hewan: '',
-                                    jenis_hewan: '',
-                                    ras_hewan: '',
-                                    jenis_kelamin: '',
-                                    tanggal_lahir: '',
-                                    berat_badan: '',
-                                    status_ternak: ''
-                                }">
+                                        showCreateModal: false, 
+                                        showQRModal: false, 
+                                        showEditModal: false, 
+                                        showDeleteModal: false, 
+                                        showScanModal: false, 
+                                        currentAnimal: null,
+                                        nama_hewan: '',
+                                        jenis_hewan: '',
+                                        ras_hewan: '',
+                                        jenis_kelamin: '',
+                                        tanggal_lahir: '',
+                                        berat_badan: '',
+                                        status_ternak: ''
+                                    }">
         {{-- Success/Error Messages --}}
         @if(session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg">
@@ -211,7 +211,7 @@
                     <span>Tambah Ternak</span>
                 </button>
 
-                <button @click="showScanModal = true"
+                <button onclick="openScanModal()"
                     class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
                     <i class="fa-solid fa-camera text-sm"></i>
                     <span>Pindai QR</span>
@@ -553,45 +553,45 @@
         function printSingleQR(animal) {
             const printWindow = window.open('', '_blank', 'width=400,height=500');
             printWindow.document.write(`
-                                                        <!DOCTYPE html>
-                                                        <html>
-                                                        <head>
-                                                            <title>QR Code - ${animal.kode_hewan}</title>
-                                                            <style>
-                                                                body {
-                                                                    font-family: Arial, sans-serif;
-                                                                    text-align: center;
-                                                                    padding: 30px;
-                                                                }
-                                                                .qr-container {
-                                                                    border: 3px solid #10b981;
-                                                                    border-radius: 12px;
-                                                                    padding: 25px;
-                                                                    display: inline-block;
-                                                                }
-                                                                h1 { font-size: 24px; margin-bottom: 5px; color: #1f2937; }
-                                                                .code { font-size: 18px; color: #10b981; font-weight: bold; margin-bottom: 15px; }
-                                                                .details { font-size: 14px; color: #6b7280; margin-bottom: 15px; }
-                                                                img { width: 200px; height: 200px; }
-                                                                .farm { font-size: 12px; color: #9ca3af; margin-top: 15px; }
-                                                            </style>
-                                                        </head>
-                                                        <body>
-                                                            <div class="qr-container">
-                                                                <h1>${animal.nama_hewan}</h1>
-                                                                <div class="code">${animal.kode_hewan}</div>
-                                                                <div class="details">${animal.jenis_hewan ? animal.jenis_hewan.charAt(0).toUpperCase() + animal.jenis_hewan.slice(1) : ''} - ${animal.ras_hewan || ''}</div>
-                                                                <img src="${animal.qr_url || ''}" alt="QR Code">
-                                                                <div class="farm">FarmGo - Sistem Manajemen Ternak</div>
-                                                            </div>
-                                                            <script>
-                                                                window.onload = function() { 
-                                                                    setTimeout(function() { window.print(); }, 300);
-                                                                }
-                                                            <\/script>
-                                                        </body>
-                                                        </html>
-                                                    `);
+                                                            <!DOCTYPE html>
+                                                            <html>
+                                                            <head>
+                                                                <title>QR Code - ${animal.kode_hewan}</title>
+                                                                <style>
+                                                                    body {
+                                                                        font-family: Arial, sans-serif;
+                                                                        text-align: center;
+                                                                        padding: 30px;
+                                                                    }
+                                                                    .qr-container {
+                                                                        border: 3px solid #10b981;
+                                                                        border-radius: 12px;
+                                                                        padding: 25px;
+                                                                        display: inline-block;
+                                                                    }
+                                                                    h1 { font-size: 24px; margin-bottom: 5px; color: #1f2937; }
+                                                                    .code { font-size: 18px; color: #10b981; font-weight: bold; margin-bottom: 15px; }
+                                                                    .details { font-size: 14px; color: #6b7280; margin-bottom: 15px; }
+                                                                    img { width: 200px; height: 200px; }
+                                                                    .farm { font-size: 12px; color: #9ca3af; margin-top: 15px; }
+                                                                </style>
+                                                            </head>
+                                                            <body>
+                                                                <div class="qr-container">
+                                                                    <h1>${animal.nama_hewan}</h1>
+                                                                    <div class="code">${animal.kode_hewan}</div>
+                                                                    <div class="details">${animal.jenis_hewan ? animal.jenis_hewan.charAt(0).toUpperCase() + animal.jenis_hewan.slice(1) : ''} - ${animal.ras_hewan || ''}</div>
+                                                                    <img src="${animal.qr_url || ''}" alt="QR Code">
+                                                                    <div class="farm">FarmGo - Sistem Manajemen Ternak</div>
+                                                                </div>
+                                                                <script>
+                                                                    window.onload = function() { 
+                                                                        setTimeout(function() { window.print(); }, 300);
+                                                                    }
+                                                                <\/script>
+                                                            </body>
+                                                            </html>
+                                                        `);
             printWindow.document.close();
         }
 
