@@ -118,16 +118,17 @@ class SettingsController extends Controller
         ]);
 
         // Delete old avatar if exists
-        if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+        if ($user->attributes['avatar'] ?? null) {
+            Storage::disk('public')->delete($user->attributes['avatar']);
         }
 
         // Store new avatar
         $path = $request->file('avatar')->store('avatars', 'public');
 
-        // Update user avatar
+        // Update user avatar and clear avatar_url (prioritize local upload over Google)
         $user->update([
             'avatar' => $path,
+            'avatar_url' => null, // Clear Google avatar URL to prioritize local upload
         ]);
 
         return back()->with('success', 'Foto profil berhasil diperbarui!');
@@ -140,11 +141,12 @@ class SettingsController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->avatar) {
+        // Check if user has local avatar
+        if ($user->attributes['avatar'] ?? null) {
             // Delete avatar file
-            Storage::disk('public')->delete($user->avatar);
+            Storage::disk('public')->delete($user->attributes['avatar']);
 
-            // Update user avatar to null
+            // Update user avatar to null (keeps Google avatar_url if exists)
             $user->update([
                 'avatar' => null,
             ]);
@@ -152,7 +154,7 @@ class SettingsController extends Controller
             return back()->with('success', 'Foto profil berhasil dihapus!');
         }
 
-        return back()->with('info', 'Tidak ada foto profil untuk dihapus.');
+        return back()->with('info', 'Tidak ada foto profil lokal untuk dihapus.');
     }
 }
 

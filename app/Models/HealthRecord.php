@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 
 class HealthRecord extends Model
 {
@@ -32,6 +33,39 @@ class HealthRecord extends Model
         'suhu_tubuh' => 'decimal:1',
         'biaya' => 'decimal:2',
     ];
+
+    /**
+     * Boot method to clear cache when health records are modified
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($healthRecord) {
+            self::clearUserCaches($healthRecord);
+        });
+
+        static::updated(function ($healthRecord) {
+            self::clearUserCaches($healthRecord);
+        });
+
+        static::deleted(function ($healthRecord) {
+            self::clearUserCaches($healthRecord);
+        });
+    }
+
+    /**
+     * Clear user-specific caches
+     */
+    private static function clearUserCaches($healthRecord)
+    {
+        $userId = $healthRecord->animal->user_id ?? null;
+        if ($userId) {
+            Cache::forget("dashboard_data_user_{$userId}");
+            Cache::forget("health_tasks_user_{$userId}");
+            Cache::forget("kesehatan_stats_user_{$userId}");
+        }
+    }
 
     /**
      * Get the animal that owns the health record

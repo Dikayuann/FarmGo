@@ -252,11 +252,20 @@
                             class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
                             <option value="">-- Pilih Betina --</option>
                             @foreach($betinaList as $betina)
-                                <option value="{{ $betina->id }}" data-jenis="{{ $betina->jenis_hewan }}">
+                                <option value="{{ $betina->id }}" data-jenis="{{ $betina->jenis_hewan }}"
+                                    {{ !$betina->is_eligible ? 'disabled' : '' }}>
                                     {{ $betina->kode_hewan }} - {{ $betina->nama_hewan }} ({{ ucfirst($betina->jenis_hewan) }})
+                                    @if(!$betina->is_eligible)
+                                        - ❌ {{ $betina->status_message }}
+                                    @endif
                                 </option>
                             @endforeach
                         </select>
+                        @if($betinaList->where('is_eligible', false)->count() > 0)
+                            <p class="text-xs text-amber-600 mt-2">
+                                ⚠️ Betina yang tidak eligible (bunting/recovery) ditandai dengan ❌ dan tidak bisa dipilih
+                            </p>
+                        @endif
                     </div>
                 </div>
 

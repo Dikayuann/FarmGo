@@ -48,7 +48,7 @@ class RegisterController extends Controller
         // Login otomatis setelah registrasi
         Auth::login($user);
 
-        // Redirect ke dashboard
-        return redirect()->route('dashboard');
+        // Redirect ke pricing page untuk memilih langganan
+        return redirect()->route('langganan', ['first_time' => '1']);
     }
 }

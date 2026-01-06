@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class Animal extends Model
@@ -29,6 +30,44 @@ class Animal extends Model
         'tanggal_lahir' => 'date',
         'berat_badan' => 'decimal:2',
     ];
+
+    /**
+     * Boot method to clear cache when animals are modified
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Clear cache on create, update, or delete
+        static::created(function ($animal) {
+            self::clearUserCaches($animal->user_id);
+            Cache::forget('animals_total_count');
+            Cache::forget('animals_by_type_count');
+        });
+
+        static::updated(function ($animal) {
+            self::clearUserCaches($animal->user_id);
+            Cache::forget('animals_total_count');
+            Cache::forget('animals_by_type_count');
+        });
+
+        static::deleted(function ($animal) {
+            self::clearUserCaches($animal->user_id);
+            Cache::forget('animals_total_count');
+            Cache::forget('animals_by_type_count');
+        });
+    }
+
+    /**
+     * Clear all user-specific caches
+     */
+    private static function clearUserCaches($userId)
+    {
+        Cache::forget("dashboard_data_user_{$userId}");
+        Cache::forget("health_tasks_user_{$userId}");
+        Cache::forget("ternak_stats_user_{$userId}");
+        Cache::forget("user_animals_list_{$userId}");
+    }
 
     /**
      * Get the user that owns the animal
@@ -178,6 +217,21 @@ class Animal extends Model
             return false;
         }
 
+        // Check minimum age for breeding
+        if ($this->tanggal_lahir) {
+            $ageInMonths = now()->diffInMonths($this->tanggal_lahir);
+            $minAgeMonths = match ($this->jenis_hewan) {
+                'sapi' => 18,      // Sapi minimal 18 bulan
+                'kambing' => 12,   // Kambing minimal 12 bulan  
+                'domba' => 12,     // Domba minimal 12 bulan
+                default => 12,
+            };
+
+            if ($ageInMonths < $minAgeMonths) {
+                return false; // Too young to breed
+            }
+        }
+
         // Get latest perkawinan
         $latestPerkawinan = Perkawinan::where('betina_id', $this->id)
             ->orderBy('tanggal_perkawinan', 'desc')
@@ -222,6 +276,21 @@ class Animal extends Model
     {
         if ($this->jenis_kelamin !== 'betina') {
             return null;
+        }
+
+        // Check age first
+        if ($this->tanggal_lahir) {
+            $ageInMonths = now()->diffInMonths($this->tanggal_lahir);
+            $minAgeMonths = match ($this->jenis_hewan) {
+                'sapi' => 18,
+                'kambing' => 12,
+                'domba' => 12,
+                default => 12,
+            };
+
+            if ($ageInMonths < $minAgeMonths) {
+                return "Belum cukup umur (Umur: {$ageInMonths} bulan, Min: {$minAgeMonths} bulan)";
+            }
         }
 
         $latestPerkawinan = Perkawinan::where('betina_id', $this->id)

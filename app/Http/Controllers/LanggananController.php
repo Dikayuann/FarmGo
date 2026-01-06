@@ -130,6 +130,17 @@ class LanggananController extends Controller
 
             $user->startTrial(7); // 7 days trial
 
+            // Create notification for trial activation
+            \App\Models\Notifikasi::create([
+                'user_id' => $user->id,
+                'animal_id' => null,
+                'perkawinan_id' => null,
+                'jenis_notifikasi' => 'langganan',
+                'pesan' => '🎉 Selamat! Trial 7 hari Anda telah aktif. Nikmati semua fitur FarmGo secara gratis hingga ' . $user->trial_ends_at->format('d M Y') . '!',
+                'tanggal_kirim' => now(),
+                'status' => 'belum_dibaca',
+            ]);
+
             return response()->json([
                 'success' => true,
                 'is_trial' => true,
@@ -517,10 +528,20 @@ class LanggananController extends Controller
         // Link transaction to langganan
         $transaction->update(['langganan_id' => $langganan->id]);
 
-        // Update user role to premium
-        $transaction->user->update([
+        // Update user role to premium with explicit logging
+        $user = $transaction->user;
+        $oldRole = $user->role;
+
+        $user->update([
             'role' => \App\Models\User::ROLE_PREMIUM,
-            'status_langganan' => 'aktif',
+            'status_langganan' => 'premium',  // Fix: should be 'premium' not 'aktif'
+        ]);
+
+        \Log::info('User role updated to premium', [
+            'user_id' => $user->id,
+            'old_role' => $oldRole,
+            'new_role' => $user->fresh()->role,
+            'subscription_id' => $langganan->id
         ]);
 
         // Create notification for successful subscription
@@ -663,6 +684,17 @@ class LanggananController extends Controller
         }
 
         $user->startTrial(7); // 7 days trial
+
+        // Create notification for trial activation
+        \App\Models\Notifikasi::create([
+            'user_id' => $user->id,
+            'animal_id' => null,
+            'perkawinan_id' => null,
+            'jenis_notifikasi' => 'langganan',
+            'pesan' => '🎉 Selamat! Trial 7 hari Anda telah aktif. Nikmati semua fitur FarmGo secara gratis hingga ' . $user->trial_ends_at->format('d M Y') . '!',
+            'tanggal_kirim' => now(),
+            'status' => 'belum_dibaca',
+        ]);
 
         return redirect()->route('dashboard')->with('success', 'Trial 7 hari berhasil diaktifkan!');
     }

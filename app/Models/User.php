@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 
@@ -20,6 +21,36 @@ class User extends Authenticatable implements FilamentUser
     const ROLE_TRIAL = 'peternak_trial';
 
     /**
+     * Boot method to clear cache when users are modified
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Clear cache on create, update, or delete
+        static::created(function () {
+            Cache::forget('users_total_count');
+            Cache::forget('users_admin_count');
+            Cache::forget('users_premium_count');
+            Cache::forget('users_trial_count');
+        });
+
+        static::updated(function () {
+            Cache::forget('users_total_count');
+            Cache::forget('users_admin_count');
+            Cache::forget('users_premium_count');
+            Cache::forget('users_trial_count');
+        });
+
+        static::deleted(function () {
+            Cache::forget('users_total_count');
+            Cache::forget('users_admin_count');
+            Cache::forget('users_premium_count');
+            Cache::forget('users_trial_count');
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -32,6 +63,7 @@ class User extends Authenticatable implements FilamentUser
         'farm_name',
         'phone',
         'avatar',
+        'avatar_url',
         'role',
         'trial_started_at',
         'trial_ends_at',
@@ -96,6 +128,58 @@ class User extends Authenticatable implements FilamentUser
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
+    }
+
+    /**
+     * Get the user's avatar URL with priority order
+     * Priority: 1. avatar_url (Google), 2. avatar (local upload), 3. default
+     */
+    public function getDisplayAvatarAttribute(): string
+    {
+        // Priority 1: Check avatar_url (from Google or external source)
+        if ($this->attributes['avatar_url'] ?? null) {
+            $url = $this->attributes['avatar_url'];
+
+            // Validate it's a secure URL
+            if (filter_var($url, FILTER_VALIDATE_URL)) {
+                // Only allow HTTPS
+                if (parse_url($url, PHP_URL_SCHEME) === 'https') {
+                    // Whitelist trusted domains
+                    $domain = parse_url($url, PHP_URL_HOST);
+                    $trustedDomains = [
+                        'lh3.googleusercontent.com',
+                        'googleusercontent.com',
+                    ];
+
+                    if (in_array($domain, $trustedDomains)) {
+                        return $url;
+                    }
+                }
+            }
+        }
+
+        // Priority 2: Check local avatar upload
+        if ($this->attributes['avatar'] ?? null) {
+            $avatarPath = $this->attributes['avatar'];
+
+            // Check if 'avatars/' prefix is already in the path
+            if (!str_starts_with($avatarPath, 'avatars/')) {
+                $avatarPath = 'avatars/' . $avatarPath;
+            }
+
+            return asset('storage/' . $avatarPath);
+        }
+
+        // Priority 3: Default avatar
+        return asset('image/default-avatar.png');
+    }
+
+    /**
+     * Keep backward compatibility for avatar_url accessor
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        return $this->display_avatar;
     }
 
     /**
@@ -215,9 +299,9 @@ class User extends Authenticatable implements FilamentUser
             return true;
 
         $activeLangganan = $this->langganans()
-            ->where('status', 'active')
+            ->where('status', 'aktif')  // Fix: database value is 'aktif' not 'active'
             ->where('tanggal_berakhir', '>=', now())
-            ->where('paket_langganan', 'premium')
+            ->whereIn('paket_langganan', ['premium_monthly', 'premium_yearly'])  // Fix: check both premium types
             ->first();
 
         return $activeLangganan !== null;
@@ -311,26 +395,5 @@ class User extends Authenticatable implements FilamentUser
             ->get();
     }
 
-    /**
-     * Get avatar URL accessor
-     */
-    public function getAvatarUrlAttribute(): ?string
-    {
-        if (!$this->avatar) {
-            return null;
-        }
 
-        // If it's a Google avatar URL, return as is
-        if (str_contains($this->avatar, 'googleusercontent.com') || str_contains($this->avatar, 'http')) {
-            return $this->avatar;
-        }
-
-        // Otherwise, it's a local file
-        // Check if 'avatars/' prefix is already in the path
-        $avatarPath = str_starts_with($this->avatar, 'avatars/')
-            ? $this->avatar
-            : 'avatars/' . $this->avatar;
-
-        return asset('storage/' . $avatarPath);
-    }
 }

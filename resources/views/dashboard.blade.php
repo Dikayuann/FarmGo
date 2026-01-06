@@ -152,57 +152,26 @@
 
 @push('scripts')
     <script>
-        @if (count($populationData) > 0)
-            const ctxPop = document.getElementById('populationChart').getContext('2d');
-            new Chart(ctxPop, {
-                type: 'line',
-                data: {
-                    labels: @json($monthLabels),
-                    datasets: [{
-                        label: 'Total Populasi',
-                        data: @json($populationData),
-                        borderColor: '#22c55e', // Green FarmGo
-                        backgroundColor: 'rgba(34, 197, 94, 0.05)',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#22c55e',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: { borderDash: [2, 4], color: '#f3f4f6' },
-                            ticks: { font: { size: 10, family: 'Inter' } }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 10, family: 'Inter' } }
-                        }
-                    }
-                }
-            });
-        @endif
-
-            @if (count($reproductionData) > 0)
-                const ctxRep = document.getElementById('reproductionChart').getContext('2d');
-                new Chart(ctxRep, {
-                    type: 'bar',
+        // Ensure charts are initialized after DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            @if (count($populationData) > 0)
+                const ctxPop = document.getElementById('populationChart').getContext('2d');
+                new Chart(ctxPop, {
+                    type: 'line',
                     data: {
-                        labels: ['Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                        labels: @json($monthLabels),
                         datasets: [{
-                            label: 'Tingkat (%)',
-                            data: @json($reproductionData),
-                            backgroundColor: '#2563eb', // Blue-600
-                            borderRadius: 4,
-                            barThickness: 24
+                            label: 'Total Populasi',
+                            data: @json($populationData),
+                            borderColor: '#22c55e', // Green FarmGo
+                            backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#22c55e',
+                            pointBorderWidth: 2,
+                            pointRadius: 4,
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
@@ -211,8 +180,7 @@
                         plugins: { legend: { display: false } },
                         scales: {
                             y: {
-                                beginAtZero: true,
-                                max: 100,
+                                beginAtZero: false,
                                 grid: { borderDash: [2, 4], color: '#f3f4f6' },
                                 ticks: { font: { size: 10, family: 'Inter' } }
                             },
@@ -224,5 +192,40 @@
                     }
                 });
             @endif
+
+                @if (count($reproductionData) > 0)
+                    const ctxRep = document.getElementById('reproductionChart').getContext('2d');
+                    new Chart(ctxRep, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Feb', 'Mar', 'Apr', 'Mei', 'Jun'],
+                            datasets: [{
+                                label: 'Tingkat (%)',
+                                data: @json($reproductionData),
+                                backgroundColor: '#2563eb', // Blue-600
+                                borderRadius: 4,
+                                barThickness: 24
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    max: 100,
+                                    grid: { borderDash: [2, 4], color: '#f3f4f6' },
+                                    ticks: { font: { size: 10, family: 'Inter' } }
+                                },
+                                x: {
+                                    grid: { display: false },
+                                    ticks: { font: { size: 10, family: 'Inter' } }
+                                }
+                            }
+                        }
+                    });
+                @endif
+            });
     </script>
 @endpush

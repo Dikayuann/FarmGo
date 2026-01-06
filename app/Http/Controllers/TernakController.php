@@ -7,6 +7,7 @@ use App\Models\Animal;
 use App\Models\Notifikasi;
 use App\Http\Requests\StoreAnimalRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 
@@ -20,30 +21,59 @@ class TernakController extends Controller
         $search = $request->input('search');
         $jenis = $request->input('jenis', 'all');
         $status = $request->input('status', 'all');
+        $userId = Auth::id();
 
-        $animals = Animal::where('user_id', Auth::id())
+        $animals = Animal::where('user_id', $userId)
             ->search($search)
             ->byJenis($jenis)
             ->byStatus($status)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        // Stats for cards
-        $stats = [
-            'total' => Animal::where('user_id', Auth::id())->count(),
-            'sapi' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'sapi')->count(),
-            'kambing' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'kambing')->count(),
-            'domba' => Animal::where('user_id', Auth::id())->where('jenis_hewan', 'domba')->count(),
-            'beli' => Animal::where('user_id', Auth::id())->where('status_ternak', 'beli')->count(),
-        ];
+        // Cache stats for 2 minutes per user - only recalculate if no filters
+        $cacheKey = "ternak_stats_user_{$userId}";
+
+        if ($search || $jenis !== 'all' || $status !== 'all') {
+            // Don't use cache if filters are active
+            $stats = $this->calculateStats($userId);
+        } else {
+            $stats = Cache::remember($cacheKey, 120, function () use ($userId) {
+                return $this->calculateStats($userId);
+            });
+        }
 
         // Check if print all QR is requested
         if ($request->has('print_all')) {
-            $allAnimals = Animal::where('user_id', Auth::id())->get();
+            $allAnimals = Animal::where('user_id', $userId)->get();
             return view('ternak.print-all-qr', compact('allAnimals'));
         }
 
         return view('ternak.index', compact('animals', 'stats', 'search', 'jenis', 'status'));
+    }
+
+    /**
+     * Calculate stats for animals - extracted for caching
+     */
+    private function calculateStats($userId)
+    {
+        // Single optimized query to get all stats at once
+        $statsData = Animal::where('user_id', $userId)
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN jenis_hewan = "sapi" THEN 1 ELSE 0 END) as sapi,
+                SUM(CASE WHEN jenis_hewan = "kambing" THEN 1 ELSE 0 END) as kambing,
+                SUM(CASE WHEN jenis_hewan = "domba" THEN 1 ELSE 0 END) as domba,
+                SUM(CASE WHEN status_ternak = "beli" THEN 1 ELSE 0 END) as beli
+            ')
+            ->first();
+
+        return [
+            'total' => $statsData->total ?? 0,
+            'sapi' => $statsData->sapi ?? 0,
+            'kambing' => $statsData->kambing ?? 0,
+            'domba' => $statsData->domba ?? 0,
+            'beli' => $statsData->beli ?? 0,
+        ];
     }
 
     /**

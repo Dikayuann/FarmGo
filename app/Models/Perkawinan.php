@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 
 class Perkawinan extends Model
@@ -45,6 +46,40 @@ class Perkawinan extends Model
         'estimasi_kelahiran' => 'date',
         'reminder_birahi_berikutnya' => 'date',
     ];
+
+    /**
+     * Boot method to clear cache when reproduction records are modified
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($perkawinan) {
+            self::clearUserCaches($perkawinan);
+        });
+
+        static::updated(function ($perkawinan) {
+            self::clearUserCaches($perkawinan);
+        });
+
+        static::deleted(function ($perkawinan) {
+            self::clearUserCaches($perkawinan);
+        });
+    }
+
+    /**
+     * Clear user-specific caches
+     */
+    private static function clearUserCaches($perkawinan)
+    {
+        $userId = $perkawinan->betina->user_id ?? null;
+        if ($userId) {
+            Cache::forget("dashboard_data_user_{$userId}");
+            Cache::forget("reproduksi_stats_user_{$userId}");
+            Cache::forget("reproduksi_reminders_user_{$userId}");
+            Cache::forget("heat_detections_user_{$userId}");
+        }
+    }
 
     /**
      * Get the male parent animal

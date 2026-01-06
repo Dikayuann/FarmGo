@@ -11,6 +11,7 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Notifications\Notification;
 use Maatwebsite\Excel\Facades\Excel;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class ListAnimals extends ListRecords
 {
@@ -45,5 +46,13 @@ class ListAnimals extends ListRecords
                 }),
             CreateAction::make(),
         ];
+    }
+
+    /**
+     * Eager load relationships to prevent N+1 queries
+     */
+    protected function getTableQuery(): ?Builder
+    {
+        return static::getResource()::getEloquentQuery()->with('user:id,name');
     }
 }

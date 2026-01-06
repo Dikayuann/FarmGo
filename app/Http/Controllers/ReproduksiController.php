@@ -84,15 +84,19 @@ class ReproduksiController extends Controller
         // Get all active animals for this user, grouped by gender
         $jantanList = Animal::where('user_id', $user->id)
             ->where('jenis_kelamin', 'jantan')
+            ->orderBy('nama_hewan')
             ->get(['id', 'kode_hewan', 'nama_hewan', 'jenis_hewan']);
 
-        // Get eligible betina (not pregnant or in recovery)
-        $allBetinas = Animal::where('user_id', $user->id)
+        // Get ALL betinas (don't filter by eligibility - show all with status)
+        $betinaList = Animal::where('user_id', $user->id)
             ->where('jenis_kelamin', 'betina')
+            ->orderBy('nama_hewan')
             ->get(['id', 'kode_hewan', 'nama_hewan', 'jenis_hewan']);
 
-        $betinaList = $allBetinas->filter(function ($animal) {
-            return $animal->isEligibleForBreeding();
+        // Add eligibility status to each betina
+        $betinaList->each(function ($betina) {
+            $betina->is_eligible = $betina->isEligibleForBreeding();
+            $betina->status_message = $betina->getBreedingStatusMessage();
         });
 
         return view('reproduksi.create', compact('jantanList', 'betinaList'));

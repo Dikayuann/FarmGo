@@ -12,11 +12,8 @@
 
         @php
             $user = Auth::user();
-            $isPremium = $user->langganans()
-                ->where('status', 'active')
-                ->where('tanggal_berakhir', '>=', now())
-                ->where('paket_langganan', '!=', 'trial')
-                ->exists();
+            // Use the User model's built-in export check method
+            $isPremium = $user->canExportData();
         @endphp
 
         @if(session('error'))

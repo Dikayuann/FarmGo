@@ -5,15 +5,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FarmGo Landing Page</title>
-    @vite('resources/css/app.css')
-    <!-- AOS Library -->
-    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
-    <style>
-        /* Custom font adjustment to match the clean look */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
+    <!-- Preconnect for third-party resources -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com">
+    <link rel="preconnect" href="https://unpkg.com">
+
+    @vite('resources/css/app.css')
+
+    <!-- Google Fonts - non-blocking -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript>
+        <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap">
+    </noscript>
+
+    <!-- AOS Library - deferred -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="https://unpkg.com/aos@2.3.1/dist/aos.css">
+    </noscript>
+
+    <style>
         body {
             font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        html {
+            overflow-x: hidden;
         }
 
         /* Smooth scroll behavior */
@@ -69,7 +91,8 @@
         class="bg-white/80 backdrop-blur-lg p-4 px-6 md:px-12 flex justify-between items-center w-full fixed top-0 z-50 border-b border-lime-100/50 shadow-sm">
 
         <div class="flex items-center gap-2">
-            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="max-w-12 max-h-12 drop-shadow-md">
+            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="max-w-12 max-h-12 drop-shadow-md"
+                width="48" height="48" fetchpriority="high">
         </div>
 
         <div class="hidden md:flex space-x-8 text-slate-600 font-medium text-sm">
@@ -178,7 +201,8 @@
                     class="absolute inset-0 bg-gradient-to-r from-lime-400/30 to-green-400/30 rounded-full blur-3xl animate-pulse">
                 </div>
                 <img src="{{ asset('image/Pic.png') }}" alt="3D Illustration of Cow and Goat"
-                    class="relative w-full max-w-lg drop-shadow-2xl object-contain float-animation">
+                    class="relative w-full max-w-lg drop-shadow-2xl object-contain float-animation" width="512"
+                    height="512" loading="eager">
             </div>
 
         </div>
@@ -230,7 +254,8 @@
                 </div>
                 <img src="https://images.unsplash.com/photo-1596733430284-f7437764b1a9?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
                     alt="Cows in field"
-                    class="object-cover w-full h-full transform hover:scale-105 transition duration-700">
+                    class="object-cover w-full h-full transform hover:scale-105 transition duration-700" width="800"
+                    height="1200" loading="lazy">
             </div>
         </div>
     </section>
@@ -243,7 +268,8 @@
                 </div>
                 <img src="https://images.unsplash.com/photo-1545468800-85cc9bc6ecf7?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
                     alt="Cow closeup"
-                    class="relative rounded-3xl shadow-2xl w-full h-auto object-cover transform hover:scale-[1.02] transition duration-500">
+                    class="relative rounded-3xl shadow-2xl w-full h-auto object-cover transform hover:scale-[1.02] transition duration-500"
+                    width="800" height="1120" loading="lazy">
             </div>
 
             <div class="space-y-8" data-aos="fade-down" data-aos-delay="200">
@@ -366,7 +392,8 @@
 
                 <div class="h-full" data-aos="fade-down" data-aos-delay="350">
                     <img src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                        alt="Farm landscape" class="rounded-2xl h-full object-cover shadow-lg">
+                        alt="Farm landscape" class="rounded-2xl h-full object-cover shadow-lg" width="800" height="531"
+                        loading="lazy">
                 </div>
             </div>
         </div>
@@ -455,7 +482,7 @@
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
                             <img src="https://i.pravatar.cc/150?u=a042581f4e29026024d" alt="Eko"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" width="84" height="84" loading="lazy">
                         </div>
                         <div>
                             <h4 class="font-bold text-lg">Eko Susiloanto</h4>
@@ -473,7 +500,7 @@
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-emerald-100 rounded-full overflow-hidden">
                             <img src="https://i.pravatar.cc/150?u=a042581f4e29026704d" alt="Tri"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" width="84" height="84" loading="lazy">
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-800 text-lg">Tri Cahyono</h4>
@@ -490,7 +517,7 @@
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-teal-100 rounded-full overflow-hidden">
                             <img src="https://i.pravatar.cc/150?u=a048581f4e29026704d" alt="Tjandra"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" width="84" height="84" loading="lazy">
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-800 text-lg">Tjandra Mangkualam</h4>
@@ -507,7 +534,7 @@
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 bg-cyan-100 rounded-full overflow-hidden">
                             <img src="https://i.pravatar.cc/150?u=a04258114e29026704d" alt="Mukidi"
-                                class="w-full h-full object-cover">
+                                class="w-full h-full object-cover" width="84" height="84" loading="lazy">
                         </div>
                         <div>
                             <h4 class="font-bold text-slate-800 text-lg">Cak Mukidi</h4>
@@ -527,7 +554,7 @@
             data-aos="fade-down" data-aos-duration="1000">
             <div class="hidden md:block relative">
                 <img src="https://img.freepik.com/free-photo/funny-curious-cow-looking-camera-while-other-cows-eating-hay-background-cattle-farm_342744-895.jpg?semt=ais_hybrid&w=740&q=80"
-                    alt="Cows in barn" class="w-full h-full object-cover">
+                    alt="Cows in barn" class="w-full h-full object-cover" width="740" height="493" loading="lazy">
                 <div class="absolute inset-0 bg-gradient-to-r from-emerald-900/40 to-transparent"></div>
             </div>
 

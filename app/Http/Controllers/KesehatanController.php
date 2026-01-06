@@ -7,6 +7,7 @@ use App\Models\HealthRecord;
 use App\Models\Animal;
 use App\Http\Requests\StoreHealthRecordRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class KesehatanController extends Controller
 {
@@ -19,12 +20,13 @@ class KesehatanController extends Controller
         $animalId = $request->input('animal_id', 'all');
         $status = $request->input('status', 'all');
         $jenisPemeriksaan = $request->input('jenis_pemeriksaan', 'all');
+        $userId = Auth::id();
 
-        // Get health records for user's animals only
-        $healthRecords = HealthRecord::whereHas('animal', function ($query) {
-            $query->where('user_id', Auth::id());
+        // Get health records for user's animals only with eager loading
+        $healthRecords = HealthRecord::whereHas('animal', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
         })
-            ->with('animal')
+            ->with('animal:id,nama_hewan,kode_hewan,user_id') // Only load needed fields
             ->search($search)
             ->byAnimal($animalId)
             ->byStatus($status)
@@ -32,30 +34,51 @@ class KesehatanController extends Controller
             ->orderBy('tanggal_pemeriksaan', 'desc')
             ->paginate(10);
 
-        // Get user's animals for filter dropdown
-        $animals = Animal::where('user_id', Auth::id())
-            ->orderBy('nama_hewan')
-            ->get();
+        // Cache animals list for dropdown for 5 minutes
+        $animals = Cache::remember("user_animals_list_{$userId}", 300, function () use ($userId) {
+            return Animal::where('user_id', $userId)
+                ->orderBy('nama_hewan')
+                ->get(['id', 'nama_hewan', 'kode_hewan']);
+        });
 
-        // Stats for cards
-        $stats = [
-            'total' => HealthRecord::whereHas('animal', function ($query) {
-                $query->where('user_id', Auth::id());
-            })->count(),
-            'sehat' => HealthRecord::whereHas('animal', function ($query) {
-                $query->where('user_id', Auth::id());
-            })->where('status_kesehatan', 'sehat')->count(),
-            'sakit' => HealthRecord::whereHas('animal', function ($query) {
-                $query->where('user_id', Auth::id());
-            })->where('status_kesehatan', 'sakit')->count(),
-            'bulan_ini' => HealthRecord::whereHas('animal', function ($query) {
-                $query->where('user_id', Auth::id());
-            })->whereMonth('tanggal_pemeriksaan', now()->month)
-                ->whereYear('tanggal_pemeriksaan', now()->year)
-                ->count(),
-        ];
+        // Optimize stats with single query
+        $cacheKey = "kesehatan_stats_user_{$userId}";
+
+        if ($search || $animalId !== 'all' || $status !== 'all' || $jenisPemeriksaan !== 'all') {
+            // Don't use cache if filters are active
+            $stats = $this->calculateHealthStats($userId);
+        } else {
+            $stats = Cache::remember($cacheKey, 120, function () use ($userId) {
+                return $this->calculateHealthStats($userId);
+            });
+        }
 
         return view('kesehatan.index', compact('healthRecords', 'animals', 'stats', 'search', 'animalId', 'status', 'jenisPemeriksaan'));
+    }
+
+    /**
+     * Calculate health stats - extracted for caching
+     */
+    private function calculateHealthStats($userId)
+    {
+        // Single optimized query
+        $statsData = HealthRecord::whereHas('animal', function ($query) use ($userId) {
+            $query->where('user_id', $userId);
+        })
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(CASE WHEN status_kesehatan = "sehat" THEN 1 ELSE 0 END) as sehat,
+                SUM(CASE WHEN status_kesehatan = "sakit" THEN 1 ELSE 0 END) as sakit,
+                SUM(CASE WHEN MONTH(tanggal_pemeriksaan) = ? AND YEAR(tanggal_pemeriksaan) = ? THEN 1 ELSE 0 END) as bulan_ini
+            ', [now()->month, now()->year])
+            ->first();
+
+        return [
+            'total' => $statsData->total ?? 0,
+            'sehat' => $statsData->sehat ?? 0,
+            'sakit' => $statsData->sakit ?? 0,
+            'bulan_ini' => $statsData->bulan_ini ?? 0,
+        ];
     }
 
     /**

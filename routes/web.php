@@ -89,17 +89,50 @@ Route::get('/login/clear-lockout', [LoginController::class, 'clearLockout'])->na
 Route::get('/register', [RegisterController::class, 'view'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 
+// API route for email validation with rate limiting
+Route::get('/api/check-email', function (Illuminate\Http\Request $request) {
+    // Rate limiting: max 20 requests per minute per IP
+    $key = 'check-email:' . $request->ip();
+
+    if (Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 20)) {
+        return response()->json([
+            'error' => 'Too many requests. Please try again later.'
+        ], 429);
+    }
+
+    Illuminate\Support\Facades\RateLimiter::hit($key, 60); // 60 seconds decay
+
+    $email = $request->query('email');
+
+    // Basic email validation
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return response()->json(['exists' => false]);
+    }
+
+    $exists = \App\Models\User::where('email', $email)->exists();
+    return response()->json(['exists' => $exists]);
+});
+
 // Google OAuth routes
 Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+Route::post('/auth/google/one-tap', [GoogleAuthController::class, 'handleOneTap'])->name('auth.google.oneTap');
 
-// Secure logout route with POST method
+// Secure logout route with POST method (primary)
 Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/login');
+    return redirect('/login')->with('success', 'Anda telah berhasil logout.');
 })->name('logout');
+
+// GET logout route (fallback for CSRF token expiry)
+Route::get('/logout', function () {
+    Auth::logout();
+    request()->session()->invalidate();
+    request()->session()->regenerateToken();
+    return redirect('/login')->with('info', 'Sesi Anda telah berakhir. Silakan login kembali.');
+})->name('logout.get');
 
 // Midtrans callback (no auth required, called by Midtrans server)
 Route::post('/langganan/callback', [App\Http\Controllers\LanggananController::class, 'handleCallback'])->name('langganan.callback');
