@@ -10,6 +10,22 @@ class LoginController extends Controller
 {
     public function view()
     {
+        // If user is already authenticated, redirect to appropriate page
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->isAdmin()) {
+                return redirect('/admin');
+            }
+
+            if (!$user->hasActivePremium() && !$user->isOnTrial()) {
+                return redirect()->route('langganan')
+                    ->with('info', 'Silakan pilih paket langganan untuk melanjutkan.');
+            }
+
+            return redirect()->route('dashboard');
+        }
+
         // Cek apakah akun sedang terkunci
         if (session('login_locked_until')) {
             $lockedUntil = session('login_locked_until');
@@ -93,6 +109,12 @@ class LoginController extends Controller
             if ($user->isAdmin()) {
                 // Admin redirect ke admin panel
                 return redirect('/admin');
+            }
+
+            // Check if user has active subscription
+            if (!$user->hasActivePremium() && !$user->isOnTrial()) {
+                // Redirect to subscription page if no active subscription
+                return redirect()->route('langganan')->with('info', 'Silakan pilih paket langganan untuk mulai menggunakan FarmGo.');
             }
 
             // Peternak (premium/trial) redirect ke dashboard

@@ -11,12 +11,28 @@ class RegisterController extends Controller
 {
     public function view()
     {
+        // If user is already authenticated, redirect to appropriate page
+        if (Auth::check()) {
+            $user = Auth::user();
+
+            if ($user->isAdmin()) {
+                return redirect('/admin');
+            }
+
+            if (!$user->hasActivePremium() && !$user->isOnTrial()) {
+                return redirect()->route('langganan')
+                    ->with('info', 'Silakan pilih paket langganan untuk melanjutkan.');
+            }
+
+            return redirect()->route('dashboard');
+        }
+
         return view('register');
     }
 
     public function register(Request $request)
     {
-        // Validasi input dengan password validation yang kuat
+        // Validasi input
         $request->validate([
             'full_name' => 'required|string|max:255',
             'farm_name' => 'nullable|string|max:255',
@@ -26,13 +42,13 @@ class RegisterController extends Controller
                 'required',
                 'string',
                 'min:8',
-                'regex:/[a-z]/',      // minimal 1 huruf kecil
-                'regex:/[A-Z]/',      // minimal 1 huruf besar
-                'regex:/[0-9]/',      // minimal 1 angka
+                'regex:/[a-z]/',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
             ],
         ], [
             'password.min' => 'Password minimal 8 karakter.',
-            'password.regex' => 'Password harus mengandung minimal 1 huruf besar, 1 huruf kecil, dan 1 angka.',
+            'password.regex' => 'Password harus mengandung huruf besar, huruf kecil, dan angka.',
         ]);
 
         // Buat user baru
@@ -42,7 +58,7 @@ class RegisterController extends Controller
             'email' => $request->email,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
-            'role' => User::ROLE_TRIAL, // Default role untuk user baru
+            'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
         ]);
 
         // Login otomatis setelah registrasi

@@ -17,6 +17,7 @@ class User extends Authenticatable implements FilamentUser
 
     // Role constants
     const ROLE_ADMIN = 'admin';
+    const ROLE_PETERNAK = 'peternak'; // Default role for new users (no subscription yet)
     const ROLE_PREMIUM = 'peternak_premium';
     const ROLE_TRIAL = 'peternak_trial';
 
@@ -199,6 +200,31 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Check if user can add more reproduction records
+     */
+    public function canAddReproduction(): bool
+    {
+        // Premium users have unlimited reproduction records
+        if ($this->hasActivePremium()) {
+            return true;
+        }
+
+        // Trial users are limited by batas_reproduksi
+        if ($this->isOnTrial()) {
+            $currentCount = \App\Models\Perkawinan::where('betina_id', function ($query) {
+                $query->select('id')
+                    ->from('animals')
+                    ->where('user_id', $this->id);
+            })->count();
+
+            return $currentCount < ($this->batas_reproduksi ?? 5);
+        }
+
+        // Users without subscription cannot add reproduction records
+        return false;
+    }
+
+    /**
      * Determine if user can access Filament admin panel
      * Only admin role can access
      */
@@ -255,7 +281,7 @@ class User extends Authenticatable implements FilamentUser
             'trial_ends_at' => now()->addDays($days),
             'batas_ternak' => 10,
             'batas_vaksin' => 10,
-            'batas_reproduksi' => 10,
+            'batas_reproduksi' => 5, // Trial users can track up to 5 reproduction records
         ]);
     }
 

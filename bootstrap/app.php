@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'admin' => \App\Http\Middleware\IsAdmin::class,
+            'require.subscription' => \App\Http\Middleware\RequireSubscription::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

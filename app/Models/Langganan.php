@@ -122,7 +122,7 @@ class Langganan extends Model
             'status_langganan' => 'trial',
             'batas_ternak' => 10,
             'batas_vaksin' => 10,
-            'batas_reproduksi' => 10,
+            'batas_reproduksi' => 5, // Trial users can track up to 5 reproduction records
         ]);
     }
 

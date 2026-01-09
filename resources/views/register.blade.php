@@ -102,8 +102,8 @@
                 @error('password')
                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                 @enderror
+                <p class="text-xs text-gray-500 mt-1">Gunakan minimal 8 karakter untuk keamanan</p>
             </div>
-
 
             <!-- Submit Button -->
             <button type="submit" class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm">

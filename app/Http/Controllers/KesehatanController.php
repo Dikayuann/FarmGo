@@ -108,7 +108,25 @@ class KesehatanController extends Controller
         $data = $request->validated();
         $data['tanggal_pemeriksaan'] = \Carbon\Carbon::parse($request->tanggal_pemeriksaan)->format('Y-m-d H:i:s');
 
-        HealthRecord::create($data);
+        $healthRecord = HealthRecord::create($data);
+
+        // Create notification if animal is sick or in emergency
+        if (in_array($data['status_kesehatan'], ['sakit', 'darurat'])) {
+            $statusText = $data['status_kesehatan'] === 'darurat' ? 'DARURAT' : 'Sakit';
+            $emoji = $data['status_kesehatan'] === 'darurat' ? '🚨' : '⚠️';
+
+            \App\Models\Notifikasi::create([
+                'user_id' => Auth::id(),
+                'animal_id' => $animal->id,
+                'perkawinan_id' => null,
+                'jenis_notifikasi' => 'kesehatan_darurat',
+                'pesan' => "{$emoji} {$statusText}! {$animal->kode_hewan} - {$animal->nama_hewan} memerlukan perhatian. Status: {$statusText}. " .
+                    ($data['diagnosis'] ? "Diagnosis: {$data['diagnosis']}. " : "") .
+                    "Segera lakukan tindakan yang diperlukan.",
+                'tanggal_kirim' => now(),
+                'status' => 'belum_dibaca',
+            ]);
+        }
 
         return redirect()->route('kesehatan.index')
             ->with('success', 'Catatan kesehatan berhasil ditambahkan!');
@@ -157,7 +175,29 @@ class KesehatanController extends Controller
             ->where('user_id', Auth::id())
             ->firstOrFail();
 
+        // Check if status changed from healthy to sick/emergency
+        $oldStatus = $healthRecord->status_kesehatan;
+        $newStatus = $request->status_kesehatan;
+
         $healthRecord->update($request->validated());
+
+        // Create notification only if status worsened (healthy -> sick/emergency)
+        if ($oldStatus === 'sehat' && in_array($newStatus, ['sakit', 'darurat'])) {
+            $statusText = $newStatus === 'darurat' ? 'DARURAT' : 'Sakit';
+            $emoji = $newStatus === 'darurat' ? '🚨' : '⚠️';
+
+            \App\Models\Notifikasi::create([
+                'user_id' => Auth::id(),
+                'animal_id' => $animal->id,
+                'perkawinan_id' => null,
+                'jenis_notifikasi' => 'kesehatan_darurat',
+                'pesan' => "{$emoji} Perubahan Status! {$animal->kode_hewan} - {$animal->nama_hewan} sekarang berstatus {$statusText}. " .
+                    ($request->diagnosis ? "Diagnosis: {$request->diagnosis}. " : "") .
+                    "Segera lakukan tindakan yang diperlukan.",
+                'tanggal_kirim' => now(),
+                'status' => 'belum_dibaca',
+            ]);
+        }
 
         return redirect()->route('kesehatan.index')
             ->with('success', 'Catatan kesehatan berhasil diperbarui!');

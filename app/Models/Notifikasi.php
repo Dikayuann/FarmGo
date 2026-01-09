@@ -72,4 +72,12 @@ class Notifikasi extends Model
             ->where('tanggal_kirim', '>=', now())
             ->where('status', 'belum_dibaca');
     }
+
+    /**
+     * Scope for health emergency notifications
+     */
+    public function scopeHealthEmergency($query)
+    {
+        return $query->where('jenis_notifikasi', 'kesehatan_darurat');
+    }
 }

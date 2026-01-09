@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FarmGo Login</title>
     @vite('resources/css/app.css')
-{{--    <x-turnstile.scripts />--}}
+    {{-- <x-turnstile.scripts />--}}
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -64,14 +64,14 @@
                                 </p>
                             @endforeach
 
-                                {{-- Link to clear lockout if account is locked --}}
-                                @if (($errors->has('email') && str_contains($errors->first('email'), 'terkunci')) || ($errors->has('password') && str_contains($errors->first('password'), 'terkunci')))
-                                    <p class="text-xs text-red-600 mt-2">
-                                        Tidak ingin menunggu?
-                                        <a href="{{ route('login.clear') }}"
-                                            class="underline hover:text-red-800 font-medium">Klik di sini untuk reset</a>
-                                    </p>
-                                @endif
+                            {{-- Link to clear lockout if account is locked --}}
+                            @if (($errors->has('email') && str_contains($errors->first('email'), 'terkunci')) || ($errors->has('password') && str_contains($errors->first('password'), 'terkunci')))
+                                <p class="text-xs text-red-600 mt-2">
+                                    Tidak ingin menunggu?
+                                    <a href="{{ route('login.clear') }}" class="underline hover:text-red-800 font-medium">Klik
+                                        di sini untuk reset</a>
+                                </p>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -79,7 +79,7 @@
 
             <!-- Login Form -->
             <form action="{{ route('login') }}" method="POST" class="space-y-5">
-{{--                <x-turnstile />--}}
+                {{-- <x-turnstile />--}}
                 @csrf <!-- CSRF Token untuk melindungi aplikasi dari CSRF attack -->
 
                 <!-- Email Input -->
@@ -145,7 +145,7 @@
             </div>
 
             <!-- Google Login Button -->
-            <a href="{{ route('auth.google') }}"
+            <a href="{{ route('auth.google.login') }}"
                 class="w-full bg-[#2d2d2d] text-white font-medium py-3 rounded-lg hover:bg-black transition duration-300 flex items-center justify-center gap-3">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
@@ -161,7 +161,7 @@
                         d="M12 4.79C13.76 4.79 15.34 5.4 16.58 6.58L20.01 3.15C17.95 1.23 15.23 0 12 0C7.37 0 3.27 2.59 1.27 6.56L5.27 9.66C6.22 6.9 8.87 4.79 12 4.79Z"
                         fill="#EA4335" />
                 </svg>
-                Google
+                Masuk dengan Google
             </a>
 
             <!-- Sign Up Link -->

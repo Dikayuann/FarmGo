@@ -168,6 +168,13 @@ class ReproduksiController extends Controller
 
         DB::beginTransaction();
         try {
+            // Check if user can add more reproduction records (quota limit for trial)
+            if (!$user->canAddReproduction()) {
+                return back()->withErrors([
+                    'error' => 'Anda telah mencapai batas maksimal 5 catatan reproduksi untuk akun Trial. Upgrade ke Premium untuk tracking unlimited!'
+                ])->with('show_upgrade_modal', true);
+            }
+
             // Calculate gestation period and reminder date
             $gestationPeriod = Perkawinan::getGestationPeriod($betina->jenis_hewan);
             $heatCycleInterval = Perkawinan::getHeatCycleInterval();

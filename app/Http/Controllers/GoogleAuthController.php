@@ -11,9 +11,17 @@ use Laravel\Socialite\Facades\Socialite;
 class GoogleAuthController extends Controller
 {
     /**
-     * Redirect user ke halaman login Google
+     * Redirect user ke halaman login Google (untuk LOGIN)
      */
-    public function redirectToGoogle()
+    public function redirectToGoogleLogin()
+    {
+        return Socialite::driver('google')->redirect();
+    }
+
+    /**
+     * Redirect user ke halaman login Google (untuk REGISTER)
+     */
+    public function redirectToGoogleRegister()
     {
         return Socialite::driver('google')->redirect();
     }
@@ -21,73 +29,85 @@ class GoogleAuthController extends Controller
     /**
      * Handle callback dari Google setelah user authorize
      */
-    public function handleGoogleCallback()
+    public function handleGoogleCallback(Request $request)
     {
         try {
             // Ambil data user dari Google
             $googleUser = Socialite::driver('google')->user();
             $googleEmail = $googleUser->getEmail();
+            $googleId = $googleUser->getId();
+            $googleName = $googleUser->getName();
+            $googleAvatar = $googleUser->getAvatar();
 
-            // Cek apakah user sudah ada berdasarkan google_id
-            $user = User::where('google_id', $googleUser->getId())->first();
+            // Cek apakah user sudah ada berdasarkan google_id ATAU email
+            $user = User::where('google_id', $googleId)
+                ->orWhere('email', $googleEmail)
+                ->first();
 
             if ($user) {
-                // User sudah ada dengan Google ID, langsung login
-                Auth::login($user);
-                request()->session()->regenerate();
+                // User exists - update google_id if not set
+                if (!$user->google_id) {
+                    $user->update([
+                        'google_id' => $googleId,
+                        'avatar_url' => $googleAvatar,
+                    ]);
+                }
 
-                // Redirect based on role with email parameter for localStorage
+                // Login user
+                Auth::login($user);
+                $request->session()->regenerate();
+
+                // Check role and subscription
                 if ($user->isAdmin()) {
                     return redirect('/admin?google_email=' . urlencode($googleEmail));
                 }
-                return redirect()->route('dashboard', ['google_email' => $googleEmail]);
-            }
 
-            // Cek apakah email sudah terdaftar (untuk linking account)
-            $existingUser = User::where('email', $googleEmail)->first();
-
-            if ($existingUser) {
-                // Email sudah terdaftar, link dengan Google account
-                $existingUser->update([
-                    'google_id' => $googleUser->getId(),
-                    'avatar_url' => $googleUser->getAvatar(), // Save Google profile photo
-                ]);
-
-                Auth::login($existingUser);
-                request()->session()->regenerate();
-
-                // Redirect based on role with email parameter
-                if ($existingUser->isAdmin()) {
-                    return redirect('/admin?google_email=' . urlencode($googleEmail));
+                // Check if user has active subscription
+                if (!$user->hasActivePremium() && !$user->isOnTrial()) {
+                    return redirect()->route('langganan', ['google_email' => $googleEmail])
+                        ->with('info', 'Selamat datang kembali! Silakan pilih paket langganan untuk melanjutkan.');
                 }
-                return redirect()->route('dashboard', ['google_email' => $googleEmail]);
+
+                return redirect()->route('dashboard', ['google_email' => $googleEmail])
+                    ->with('success', 'Berhasil login dengan Google!');
             }
 
-            // User belum ada, buat user baru
+            // User doesn't exist - create new user
             $newUser = User::create([
-                'name' => $googleUser->getName(),
+                'name' => $googleName,
                 'email' => $googleEmail,
-                'google_id' => $googleUser->getId(),
-                'avatar_url' => $googleUser->getAvatar(), // Save Google profile photo
+                'google_id' => $googleId,
+                'avatar_url' => $googleAvatar,
                 'password' => null, // Password null untuk OAuth users
-                'role' => User::ROLE_TRIAL, // Default role untuk user baru
+                'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
             ]);
 
             Auth::login($newUser);
-            request()->session()->regenerate();
+            $request->session()->regenerate();
 
-            // Redirect new users to pricing page to choose subscription
-            return redirect()->route('langganan', ['google_email' => $googleEmail, 'first_time' => '1']);
+            // Redirect new users to pricing page
+            return redirect()->route('langganan', [
+                'google_email' => $googleEmail,
+                'first_time' => '1'
+            ])->with('success', 'Akun berhasil dibuat! Silakan pilih paket langganan.');
 
-        } catch (\Exception $e) {
-            // Log the actual error for debugging
-            \Log::error('Google OAuth Error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+        } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
+            \Log::warning('Google OAuth Invalid State - User may have refreshed or taken too long', [
+                'message' => $e->getMessage(),
             ]);
 
-            // Handle error, redirect ke login dengan error message
+            // Redirect back to login with friendly message
+            return redirect()->route('login')->with('info', 'Silakan coba login dengan Google sekali lagi.');
+
+        } catch (\Exception $e) {
+            \Log::error('Google OAuth Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'type' => get_class($e)
+            ]);
+
             return redirect()->route('login')->withErrors([
-                'google' => 'Gagal login dengan Google. Silakan coba lagi.'
+                'google' => 'Gagal login dengan Google. Silakan coba lagi atau gunakan email & password.'
             ]);
         }
     }
@@ -133,17 +153,25 @@ class GoogleAuthController extends Controller
                 if (!$user->google_id) {
                     $user->update([
                         'google_id' => $googleId,
-                        'avatar_url' => $avatar, // Save Google profile photo
+                        'avatar_url' => $avatar,
                     ]);
                 }
 
                 Auth::login($user);
                 request()->session()->regenerate();
 
+                // Check if user has active subscription
+                $redirectUrl = $user->isAdmin() ? '/admin' : route('dashboard');
+
+                if (!$user->isAdmin() && !$user->hasActivePremium() && !$user->isOnTrial()) {
+                    $redirectUrl = route('langganan');
+                }
+
                 return response()->json([
                     'success' => true,
                     'email' => $email,
-                    'redirect' => $user->isAdmin() ? '/admin' : route('dashboard')
+                    'redirect' => $redirectUrl,
+                    'needs_subscription' => !$user->isAdmin() && !$user->hasActivePremium() && !$user->isOnTrial()
                 ]);
             }
 
@@ -152,9 +180,9 @@ class GoogleAuthController extends Controller
                 'name' => $name,
                 'email' => $email,
                 'google_id' => $googleId,
-                'avatar_url' => $avatar, // Save Google profile photo
+                'avatar_url' => $avatar,
                 'password' => null,
-                'role' => User::ROLE_TRIAL,
+                'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
             ]);
 
             Auth::login($newUser);
@@ -164,19 +192,20 @@ class GoogleAuthController extends Controller
             return response()->json([
                 'success' => true,
                 'email' => $email,
-                'redirect' => route('langganan', ['first_time' => '1'])
+                'redirect' => route('langganan', ['first_time' => '1']),
+                'is_new_user' => true
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Google One Tap Error: ' . $e->getMessage(), [
+            \Log::error('Google One Tap Error', [
+                'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'credential_present' => $request->has('credential'),
-                'request_data' => $request->all()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Authentik gagal. Silakan gunakan tombol Google standar atau coba lagi.'
+                'message' => 'Autentikasi gagal. Silakan gunakan tombol Google standar atau coba lagi.'
             ], 500);
         }
     }
