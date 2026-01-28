@@ -3,7 +3,7 @@
 @section('title', 'Tambah Catatan Reproduksi')
 
 @section('content')
-    <div class="max-w-5xl mx-auto">
+    <div>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-semibold text-gray-900">Tambah Catatan Reproduksi</h2>
@@ -113,6 +113,22 @@
                                 </option>
                             @endforeach
                         </select>
+                        @if($jantanList->count() === 0)
+                            <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-800 flex items-start gap-2">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>
+                                        <strong>Tidak ada pejantan yang eligible.</strong><br>
+                                        Semua pejantan belum cukup umur untuk perkawinan. Silakan gunakan pejantan eksternal
+                                        atau tunggu hingga pejantan Anda cukup umur.
+                                    </span>
+                                </p>
+                            </div>
+                        @endif
                     </div>
 
                     <div x-show="jantan_type === 'external'" x-transition
@@ -252,19 +268,26 @@
                             class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
                             <option value="">-- Pilih Betina --</option>
                             @foreach($betinaList as $betina)
-                                <option value="{{ $betina->id }}" data-jenis="{{ $betina->jenis_hewan }}"
-                                    {{ !$betina->is_eligible ? 'disabled' : '' }}>
+                                <option value="{{ $betina->id }}" data-jenis="{{ $betina->jenis_hewan }}">
                                     {{ $betina->kode_hewan }} - {{ $betina->nama_hewan }} ({{ ucfirst($betina->jenis_hewan) }})
-                                    @if(!$betina->is_eligible)
-                                        - ❌ {{ $betina->status_message }}
-                                    @endif
                                 </option>
                             @endforeach
                         </select>
-                        @if($betinaList->where('is_eligible', false)->count() > 0)
-                            <p class="text-xs text-amber-600 mt-2">
-                                ⚠️ Betina yang tidak eligible (bunting/recovery) ditandai dengan ❌ dan tidak bisa dipilih
-                            </p>
+                        @if($betinaList->count() === 0)
+                            <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                <p class="text-sm text-amber-800 flex items-start gap-2">
+                                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <span>
+                                        <strong>Tidak ada betina yang eligible.</strong><br>
+                                        Semua betina sedang bunting, dalam masa pemulihan, atau belum cukup umur untuk
+                                        perkawinan.
+                                    </span>
+                                </p>
+                            </div>
                         @endif
                     </div>
                 </div>

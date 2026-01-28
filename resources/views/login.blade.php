@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FarmGo Login</title>
     @vite('resources/css/app.css')
-    {{-- <x-turnstile.scripts />--}}
+    <x-turnstile.scripts></x-turnstile.scripts>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -29,26 +29,10 @@
                 <img src="{{ asset('image/FarmGo.png') }}" alt="Logo FarmGo" class="max-w-24 max-h-24">
             </div>
 
-            {{-- Success Messages --}}
-            @if (session('success'))
-                <div class="mb-6 p-4 rounded-lg border bg-green-50 border-green-200">
-                    <div class="flex items-start">
-                        <svg class="w-5 h-5 text-green-600 mt-0.5 mr-3" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <div class="flex-1">
-                            <p class="text-sm text-green-700 font-medium">{{ session('success') }}</p>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
             {{-- Error Messages --}}
             @if ($errors->any())
-                <div
-                    class="mb-6 p-4 rounded-lg border {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200' }}">
+                <div class="mb-6 p-4 rounded-lg border {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200' }}"
+                    x-data="{ sent: false, loading: false }">
                     <div class="flex items-start">
                         <svg class="w-5 h-5 {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'text-red-600' : 'text-orange-600' }} mt-0.5 mr-3"
                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -78,14 +62,33 @@
             @endif
 
             <!-- Login Form -->
-            <form action="{{ route('login') }}" method="POST" class="space-y-5">
-                {{-- <x-turnstile />--}}
+            <form action="{{ route('login') }}" method="POST" class="space-y-4" x-data="{ loading: false }"
+                @submit="loading = true">
+
                 @csrf <!-- CSRF Token untuk melindungi aplikasi dari CSRF attack -->
+
+                <!-- Full Page Loading Overlay -->
+                <div x-show="loading" x-cloak
+                    class="fixed inset-0 bg-white bg-opacity-95 flex items-center justify-center z-50">
+                    <div class="text-center">
+                        <svg class="animate-spin h-16 w-16 text-blue-600 mx-auto mb-4"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        <p class="text-lg font-semibold text-gray-700">Memproses login...</p>
+                        <p class="text-sm text-gray-500 mt-2">Mohon tunggu sebentar</p>
+                    </div>
+                </div>
 
                 <!-- Email Input -->
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                     <input type="email" id="email" name="email" placeholder="Masukan Email" value="{{ old('email') }}"
+                        autocomplete="email"
                         class="w-full px-4 py-3 rounded-lg border {{ $errors->has('email') ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' }} focus:outline-none focus:ring-2 placeholder-gray-400 text-sm transition duration-300"
                         required>
                 </div>
@@ -95,6 +98,7 @@
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
                     <div class="relative">
                         <input type="password" id="password" name="password" placeholder="Masukan Password"
+                            autocomplete="current-password"
                             class="w-full px-4 py-3 rounded-lg border {{ $errors->has('password') ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500' }} focus:outline-none focus:ring-2 placeholder-gray-400 text-sm transition duration-300"
                             required>
 
@@ -123,16 +127,22 @@
 
                 <!-- Forgot Password Link -->
                 <div class="flex justify-end">
-                    <a href="#" class="text-xs font-medium text-blue-500 hover:text-blue-600">Forgot password?</a>
+                    <a href="{{ route('password.request') }}"
+                        class="text-xs font-medium text-blue-500 hover:text-blue-600">Forgot password?</a>
                 </div>
 
+                {{-- Turnstile CAPTCHA --}}
+                <x-turnstile />
+
                 <!-- Submit Button -->
-                <button type="submit"
-                    class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm">
+                <button type="submit" :disabled="loading"
+                    class="w-full bg-blue-600 text-white font-semibold py-3 rounded-lg hover:bg-blue-700 transition duration-300 shadow-sm disabled:opacity-70">
                     Masuk
                 </button>
 
             </form>
+
+
 
             <!-- Or Separator -->
             <div class="relative my-6">

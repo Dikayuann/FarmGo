@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -132,35 +131,14 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Get the user's avatar URL with priority order
-     * Priority: 1. avatar_url (Google), 2. avatar (local upload), 3. default
+     * Get the user's avatar URL
+     * Priority: 1. avatar (local upload), 2. default (initials)
+     * Google avatar is IGNORED to avoid errors
      */
-    public function getDisplayAvatarAttribute(): string
+    public function getAvatarUrlAttribute(): string
     {
-        // Priority 1: Check avatar_url (from Google or external source)
-        if ($this->attributes['avatar_url'] ?? null) {
-            $url = $this->attributes['avatar_url'];
-
-            // Validate it's a secure URL
-            if (filter_var($url, FILTER_VALIDATE_URL)) {
-                // Only allow HTTPS
-                if (parse_url($url, PHP_URL_SCHEME) === 'https') {
-                    // Whitelist trusted domains
-                    $domain = parse_url($url, PHP_URL_HOST);
-                    $trustedDomains = [
-                        'lh3.googleusercontent.com',
-                        'googleusercontent.com',
-                    ];
-
-                    if (in_array($domain, $trustedDomains)) {
-                        return $url;
-                    }
-                }
-            }
-        }
-
-        // Priority 2: Check local avatar upload
-        if ($this->attributes['avatar'] ?? null) {
+        // Priority 1: Check local avatar upload
+        if (!empty($this->attributes['avatar'])) {
             $avatarPath = $this->attributes['avatar'];
 
             // Check if 'avatars/' prefix is already in the path
@@ -171,16 +149,8 @@ class User extends Authenticatable implements FilamentUser
             return asset('storage/' . $avatarPath);
         }
 
-        // Priority 3: Default avatar
-        return asset('image/default-avatar.png');
-    }
-
-    /**
-     * Keep backward compatibility for avatar_url accessor
-     */
-    public function getAvatarUrlAttribute(): string
-    {
-        return $this->display_avatar;
+        // Priority 2: Default - return empty (use initials in view)
+        return '';
     }
 
     /**
@@ -211,11 +181,13 @@ class User extends Authenticatable implements FilamentUser
 
         // Trial users are limited by batas_reproduksi
         if ($this->isOnTrial()) {
-            $currentCount = \App\Models\Perkawinan::where('betina_id', function ($query) {
-                $query->select('id')
-                    ->from('animals')
-                    ->where('user_id', $this->id);
-            })->count();
+            // Get all betina IDs owned by this user
+            $betinaIds = \App\Models\Animal::where('user_id', $this->id)
+                ->where('jenis_kelamin', 'betina')
+                ->pluck('id');
+
+            // Count perkawinans for those betinas
+            $currentCount = \App\Models\Perkawinan::whereIn('betina_id', $betinaIds)->count();
 
             return $currentCount < ($this->batas_reproduksi ?? 5);
         }
@@ -316,6 +288,14 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Get login histories relationship
+     */
+    public function loginHistories()
+    {
+        return $this->hasMany(LoginHistory::class)->orderBy('login_at', 'desc');
+    }
+
+    /**
      * Check if user has active premium subscription
      * Overrides the role-based check to use langganan table
      */
@@ -349,7 +329,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         // Trial users: max 10 animals
-        return $currentCount < 10;
+        return $currentCount < 6;
     }
 
     /**
@@ -421,5 +401,174 @@ class User extends Authenticatable implements FilamentUser
             ->get();
     }
 
+    /**
+     * Send the password reset notification.
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\ResetPasswordNotification($token, $this->email));
+    }
 
+    /**
+     * Send the email verification notification.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new \App\Notifications\VerifyEmailNotification);
+    }
+
+    /**
+     * Check if verification email was sent recently (within 24 hours)
+     * Used to determine if we should resend or not
+     */
+    public function hasRecentVerificationEmail()
+    {
+        if ($this->email_verified_at) {
+            return false; // Already verified, no need to check
+        }
+
+        // FarmGo uses custom 'notifikasis' table, not Laravel's default notifications
+        // Check if user registered recently (within 24 hours) as proxy for email sent time
+        // Since verification email is sent immediately on registration
+
+        $registeredAt = $this->created_at;
+        $hoursSinceRegistration = $registeredAt->diffInHours(now());
+
+        // If registered within 24 hours, consider email still valid
+        return $hoursSinceRegistration < 24;
+    }
+
+    /**
+     * ============================================
+     * SUBSCRIPTION STATUS HELPERS
+     * ============================================
+     */
+
+    /**
+     * Get subscription expiry date from trial or premium subscription
+     */
+    protected function getSubscriptionExpiryDate()
+    {
+        // Check if has active premium subscription
+        $activeLangganan = $this->langganans()
+            ->where('status', 'aktif')
+            ->where('tanggal_berakhir', '>=', now())
+            ->first();
+
+        if ($activeLangganan) {
+            return \Carbon\Carbon::parse($activeLangganan->tanggal_berakhir);
+        }
+
+        // Fallback to trial_ends_at
+        if ($this->trial_ends_at) {
+            return \Carbon\Carbon::parse($this->trial_ends_at);
+        }
+
+        return null;
+    }
+
+    /**
+     * Check if user is in grace period (0-3 days after trial/subscription ends)
+     * During grace period, user still has full access but gets warning banners
+     */
+    public function isInGracePeriod(): bool
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return false;
+        }
+
+        $now = now();
+
+        // Grace period: 1-3 days after expiry
+        return $now->greaterThan($expiry) && $now->diffInDays($expiry, false) >= -3 && $now->diffInDays($expiry, false) < 0;
+    }
+
+    /**
+     * Check if user is in read-only mode (4-30 days after expiry)
+     * In read-only mode, user can view all data but cannot create/edit/delete
+     */
+    public function isReadOnlyMode(): bool
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return false;
+        }
+
+        $now = now();
+        $daysSinceExpiry = abs($now->diffInDays($expiry, false));
+
+        // Read-only: 4-30 days after expiry (expiry is in the past)
+        return $now->greaterThan($expiry) && $daysSinceExpiry > 3 && $daysSinceExpiry <= 30;
+    }
+
+    /**
+     * Check if user should be hard locked (30+ days after expiry)
+     * Hard locked users are redirected to subscription page and cannot access dashboard
+     */
+    public function isHardLocked(): bool
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return false;
+        }
+
+        $now = now();
+
+        // Hard lock: 30+ days after expiry
+        return $now->greaterThan($expiry) && abs($now->diffInDays($expiry, false)) > 30;
+    }
+
+    /**
+     * Get days until subscription expires (negative if expired)
+     * Positive = days remaining, Negative = days since expiry
+     */
+    public function getDaysUntilExpiry(): int
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return 0;
+        }
+
+        return now()->diffInDays($expiry, false);
+    }
+
+    /**
+     * Get days since expiry (0 if not expired)
+     */
+    public function getDaysSinceExpiry(): int
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return 0;
+        }
+
+        $now = now();
+
+        if ($now->lessThanOrEqualTo($expiry)) {
+            return 0; // Not expired yet
+        }
+
+        return abs($now->diffInDays($expiry, false));
+    }
+
+    /**
+     * Check if trial is ending soon (within 7 days)
+     */
+    public function isTrialEndingSoon(): bool
+    {
+        $expiry = $this->getSubscriptionExpiryDate();
+
+        if (!$expiry) {
+            return false;
+        }
+
+        $daysUntil = $this->getDaysUntilExpiry();
+        return $daysUntil > 0 && $daysUntil <= 7;
+    }
 }

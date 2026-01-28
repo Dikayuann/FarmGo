@@ -7,6 +7,9 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SubscriptionSuccess;
+use App\Jobs\SendSubscriptionEmail;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
@@ -52,7 +55,7 @@ class LanggananController extends Controller
 
         // Validate package
         if (!in_array($package, ['trial', 'premium_monthly', 'premium_yearly'])) {
-            return redirect()->route('langganan')->with('error', 'Paket tidak valid');
+            return redirect()->route('langganan.index')->with('error', 'Paket tidak valid');
         }
 
         // Define package details
@@ -494,6 +497,13 @@ class LanggananController extends Controller
                 'status' => 'belum_dibaca',
             ]);
 
+            // Dispatch email job to queue
+            SendSubscriptionEmail::dispatch(
+                $transaction->user,
+                $primarySubscription,
+                $transaction
+            );
+
             \Log::info('Subscription extended successfully', [
                 'order_id' => $transaction->order_id,
                 'langganan_id' => $primarySubscription->id,
@@ -556,6 +566,13 @@ class LanggananController extends Controller
             'tanggal_kirim' => now(),
             'status' => 'belum_dibaca',
         ]);
+
+        // Dispatch email job to queue
+        SendSubscriptionEmail::dispatch(
+            $user,
+            $langganan,
+            $transaction
+        );
 
         \Log::info('Subscription activated successfully', [
             'order_id' => $transaction->order_id,

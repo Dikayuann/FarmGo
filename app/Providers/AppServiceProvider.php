@@ -29,7 +29,9 @@ class AppServiceProvider extends ServiceProvider
             }
         });
 
-        if (app()->environment('production')) {
+        // Only force HTTPS in production environment
+        // This prevents "Invalid request (Unsupported SSL request)" errors in local development
+        if (config('app.env') === 'production') {
             URL::forceScheme('https');
         }
     }

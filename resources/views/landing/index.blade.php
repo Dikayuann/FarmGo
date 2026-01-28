@@ -562,17 +562,21 @@
                 <h2 class="text-3xl font-bold mb-2">Hubungi <span class="text-emerald-200">Kami</span></h2>
                 <p class="mb-8 text-emerald-100/80">Kami siap membantu kebutuhan manajemen peternakan Anda.</p>
 
-                <form class="space-y-4">
-                    <input type="text" placeholder="Full Name"
+                <form id="contact-form" class="space-y-4">
+                    @csrf
+                    <input type="text" name="name" placeholder="Nama Lengkap" required
                         class="w-full px-5 py-3.5 rounded-xl bg-white/10 border border-white/20 placeholder-white/60 text-white focus:outline-none focus:bg-white/20 focus:border-white/40 transition backdrop-blur-sm">
-                    <input type="email" placeholder="Email Address"
+                    <input type="email" name="email" placeholder="Alamat Email" required
                         class="w-full px-5 py-3.5 rounded-xl bg-white/10 border border-white/20 placeholder-white/60 text-white focus:outline-none focus:bg-white/20 focus:border-white/40 transition backdrop-blur-sm">
-                    <textarea rows="3" placeholder="Message"
+                    <textarea name="message" rows="3" placeholder="Pesan Anda" required minlength="10" maxlength="2000"
                         class="w-full px-5 py-3.5 rounded-xl bg-white/10 border border-white/20 placeholder-white/60 text-white focus:outline-none focus:bg-white/20 focus:border-white/40 transition backdrop-blur-sm resize-none"></textarea>
 
-                    <button type="submit"
-                        class="w-full bg-white text-emerald-600 font-bold py-3.5 rounded-xl hover:bg-emerald-50 transition shadow-lg transform hover:scale-[1.02] active:scale-[0.98]">
-                        Kirim Pesan
+                    <div id="contact-message" class="hidden p-4 rounded-xl text-sm font-medium"></div>
+
+                    <button type="submit" id="contact-submit"
+                        class="w-full bg-white text-emerald-600 font-bold py-3.5 rounded-xl hover:bg-emerald-50 transition shadow-lg transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span id="contact-submit-text">Kirim Pesan</span>
+                        <span id="contact-submit-loading" class="hidden">Mengirim...</span>
                     </button>
                 </form>
             </div>
@@ -619,14 +623,19 @@
                 <p class="text-slate-400 text-sm mb-4 leading-relaxed">
                     Dapatkan tips peternakan & update fitur terbaru FarmGo.
                 </p>
-                <div class="flex gap-2">
-                    <input type="email" placeholder="Email Anda"
-                        class="flex-1 px-4 py-3 rounded-xl text-white bg-slate-700/50 border border-slate-600 focus:outline-none focus:border-emerald-500 transition text-sm">
-                    <button
-                        class="bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 rounded-xl hover:from-emerald-600 hover:to-teal-600 transition font-semibold text-sm shadow-lg">
-                        Kirim
-                    </button>
-                </div>
+                <form id="newsletter-form" class="space-y-3">
+                    @csrf
+                    <div class="flex gap-2">
+                        <input type="email" name="email" placeholder="Email Anda" required
+                            class="flex-1 px-4 py-3 rounded-xl text-white bg-slate-700/50 border border-slate-600 focus:outline-none focus:border-emerald-500 transition text-sm">
+                        <button type="submit" id="newsletter-submit"
+                            class="bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-3 rounded-xl hover:from-emerald-600 hover:to-teal-600 transition font-semibold text-sm shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span id="newsletter-submit-text">Kirim</span>
+                            <span id="newsletter-submit-loading" class="hidden">...</span>
+                        </button>
+                    </div>
+                    <div id="newsletter-message" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+                </form>
             </div>
         </div>
 
@@ -688,6 +697,136 @@
             easing: 'ease-out-cubic',
             once: true,
             offset: 50
+        });
+    </script>
+
+    <!-- Contact Form AJAX Handler -->
+    <script>
+        document.getElementById('contact-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const form = this;
+            const submitBtn = document.getElementById('contact-submit');
+            const submitText = document.getElementById('contact-submit-text');
+            const submitLoading = document.getElementById('contact-submit-loading');
+            const messageDiv = document.getElementById('contact-message');
+
+            // Disable submit button and show loading
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            submitLoading.classList.remove('hidden');
+            messageDiv.classList.add('hidden');
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('{{ route('contact.store') }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    messageDiv.className = 'p-4 rounded-xl text-sm font-medium bg-green-500/20 text-green-100 border border-green-500/30';
+                    messageDiv.textContent = data.message;
+                    messageDiv.classList.remove('hidden');
+
+                    // Reset form
+                    form.reset();
+
+                    // Hide message after 5 seconds
+                    setTimeout(() => {
+                        messageDiv.classList.add('hidden');
+                    }, 5000);
+                } else {
+                    // Show error message
+                    let errorMessage = data.message || 'Terjadi kesalahan. Silakan coba lagi.';
+                    if (data.errors) {
+                        errorMessage = Object.values(data.errors).flat().join(' ');
+                    }
+                    messageDiv.className = 'p-4 rounded-xl text-sm font-medium bg-red-500/20 text-red-100 border border-red-500/30';
+                    messageDiv.textContent = errorMessage;
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'p-4 rounded-xl text-sm font-medium bg-red-500/20 text-red-100 border border-red-500/30';
+                messageDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi nanti.';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                submitLoading.classList.add('hidden');
+            }
+        });
+    </script>
+
+    <!-- Newsletter Form AJAX Handler -->
+    <script>
+        document.getElementById('newsletter-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const form = this;
+            const submitBtn = document.getElementById('newsletter-submit');
+            const submitText = document.getElementById('newsletter-submit-text');
+            const submitLoading = document.getElementById('newsletter-submit-loading');
+            const messageDiv = document.getElementById('newsletter-message');
+
+            // Disable submit button and show loading
+            submitBtn.disabled = true;
+            submitText.classList.add('hidden');
+            submitLoading.classList.remove('hidden');
+            messageDiv.classList.add('hidden');
+
+            try {
+                const formData = new FormData(form);
+                const response = await fetch('{{ route('newsletter.subscribe') }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show success message
+                    messageDiv.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-100 border border-emerald-500/30';
+                    messageDiv.textContent = data.message;
+                    messageDiv.classList.remove('hidden');
+
+                    // Reset form
+                    form.reset();
+
+                    // Hide message after 5 seconds
+                    setTimeout(() => {
+                        messageDiv.classList.add('hidden');
+                    }, 5000);
+                } else {
+                    // Show error message
+                    let errorMessage = data.message || 'Terjadi kesalahan. Silakan coba lagi.';
+                    if (data.errors) {
+                        errorMessage = Object.values(data.errors).flat().join(' ');
+                    }
+                    messageDiv.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/20 text-red-100 border border-red-500/30';
+                    messageDiv.textContent = errorMessage;
+                    messageDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                messageDiv.className = 'p-3 rounded-xl text-xs font-medium bg-red-500/20 text-red-100 border border-red-500/30';
+                messageDiv.textContent = 'Terjadi kesalahan. Silakan coba lagi nanti.';
+                messageDiv.classList.remove('hidden');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                submitLoading.classList.add('hidden');
+            }
         });
     </script>
 

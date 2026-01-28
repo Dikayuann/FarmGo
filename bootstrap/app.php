@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'admin' => \App\Http\Middleware\IsAdmin::class,
             'require.subscription' => \App\Http\Middleware\RequireSubscription::class,
+            'prevent.back' => \App\Http\Middleware\PreventBackHistory::class,
+        ]);
+
+        // Apply prevent back history to auth group
+        $middleware->appendToGroup('auth', [
+            \App\Http\Middleware\PreventBackHistory::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

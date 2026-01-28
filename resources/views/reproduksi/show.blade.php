@@ -3,7 +3,7 @@
 @section('title', 'Detail Reproduksi')
 
 @section('content')
-    <div class="max-w-5xl mx-auto" x-data="{ showDeleteModal: false }">
+    <div x-data="{ showDeleteModal: false }">
         <!-- Header with Back Button -->
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
@@ -49,7 +49,8 @@
                             <h3 class="text-lg font-semibold text-gray-900">{{ $perkawinan->jantan->nama_hewan }}</h3>
                         @elseif($perkawinan->jantan_type === 'external')
                             <h3 class="text-lg font-semibold text-gray-900">
-                                {{ $perkawinan->jantan_external_name ?? 'External' }}</h3>
+                                {{ $perkawinan->jantan_external_name ?? 'External' }}
+                            </h3>
                         @elseif($perkawinan->jantan_type === 'semen')
                             <h3 class="text-lg font-semibold text-gray-900">Sperma: {{ $perkawinan->semen_code ?? '-' }}</h3>
                         @endif

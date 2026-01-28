@@ -49,7 +49,7 @@
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {{-- Animal Select - Searchable --}}
-                            <div class="md:col-span-2" x-data="{
+                            <div class="md:col-span-2 relative" x-data="{
                                 open: false,
                                 search: '',
                                 selected: null,
@@ -165,7 +165,8 @@
                                     Berat Badan (kg) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number" id="edit_berat_badan" name="berat_badan" step="0.01" min="0"
-                                    required :value="currentRecord?.berat_badan" placeholder="Contoh: 350.5"
+                                    required :value="currentRecord?.berat_badan" placeholder="Contoh: 350.5" max="3000"
+                                    maxlength="7"
                                     class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
                             </div>
 

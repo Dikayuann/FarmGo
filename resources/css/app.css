@@ -5,6 +5,22 @@
     display: none !important;
 }
 
+/* Notification animations */
+@keyframes slide-in-down {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in-down {
+    animation: slide-in-down 0.3s ease-out;
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';

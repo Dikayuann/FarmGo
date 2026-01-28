@@ -30,7 +30,9 @@ class SettingsController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'farm_name' => ['nullable', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:20'],
+            'phone' => ['nullable', 'string', 'regex:/^(\+62|62|0)8[0-9]{8,11}$/'],
+        ], [
+            'phone.regex' => 'Format nomor telepon tidak valid. Gunakan format 08xxxxxxxxxx (10-13 digit) atau +628xxxxxxxxxx',
         ]);
 
         $user->update($validated);
@@ -102,36 +104,108 @@ class SettingsController extends Controller
     }
 
     /**
-     * Update user avatar
+     * Update user avatar (BASE64 METHOD - NO FILE UPLOAD ISSUES)
      */
     public function updateAvatar(Request $request)
     {
         $user = Auth::user();
 
-        $validated = $request->validate([
-            'avatar' => ['required', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'], // Max 2MB
-        ], [
-            'avatar.required' => 'Foto profil wajib dipilih',
-            'avatar.image' => 'File harus berupa gambar',
-            'avatar.mimes' => 'Format gambar harus jpeg, png, jpg, atau gif',
-            'avatar.max' => 'Ukuran gambar maksimal 2MB',
-        ]);
+        try {
+            // Log incoming request for debugging
+            \Log::info('Avatar upload request received', [
+                'user_id' => $user->id,
+                'has_avatar_base64' => $request->has('avatar_base64'),
+                'has_filename' => $request->has('filename'),
+                'content_type' => $request->header('Content-Type'),
+                'method' => $request->method(),
+            ]);
 
-        // Delete old avatar if exists
-        if ($user->attributes['avatar'] ?? null) {
-            Storage::disk('public')->delete($user->attributes['avatar']);
+            // Validate base64 input
+            $validated = $request->validate([
+                'avatar_base64' => 'required|string',
+                'filename' => 'required|string',
+            ]);
+
+            $base64Data = $validated['avatar_base64'];
+            $filename = $validated['filename'];
+
+            // Extract base64 data
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64Data, $type)) {
+                $base64Data = substr($base64Data, strpos($base64Data, ',') + 1);
+                $type = strtolower($type[1]); // jpg, png, gif
+
+                // Validate image type
+                if (!in_array($type, ['jpg', 'jpeg', 'png', 'gif'])) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Format gambar tidak valid. Hanya JPG, PNG, atau GIF.'
+                    ], 400);
+                }
+
+                $base64Data = base64_decode($base64Data);
+
+                if ($base64Data === false) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal decode gambar.'
+                    ], 400);
+                }
+
+                // Validate file size (2MB)
+                if (strlen($base64Data) > 2 * 1024 * 1024) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Ukuran gambar terlalu besar. Maksimal 2MB.'
+                    ], 400);
+                }
+
+                // Delete old avatar if exists
+                if ($user->avatar) {
+                    Storage::disk('public')->delete($user->avatar);
+                    \Log::info('Old avatar deleted', ['old_file' => $user->avatar]);
+                }
+
+                // Generate unique filename
+                $newFilename = 'avatars/' . uniqid() . '_' . time() . '.' . $type;
+
+                // Save to storage
+                Storage::disk('public')->put($newFilename, $base64Data);
+
+                // Update user
+                $user->update([
+                    'avatar' => $newFilename,
+                    'avatar_url' => null, // Clear Google avatar
+                ]);
+
+                \Log::info('Avatar uploaded successfully (base64)', [
+                    'user_id' => $user->id,
+                    'filename' => $newFilename,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto profil berhasil diperbarui!',
+                    'avatar_url' => asset('storage/' . $newFilename)
+                ]);
+
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Format data gambar tidak valid.'
+                ], 400);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Avatar upload failed (base64)', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunggah foto profil: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Store new avatar
-        $path = $request->file('avatar')->store('avatars', 'public');
-
-        // Update user avatar and clear avatar_url (prioritize local upload over Google)
-        $user->update([
-            'avatar' => $path,
-            'avatar_url' => null, // Clear Google avatar URL to prioritize local upload
-        ]);
-
-        return back()->with('success', 'Foto profil berhasil diperbarui!');
     }
 
     /**
@@ -139,22 +213,60 @@ class SettingsController extends Controller
      */
     public function deleteAvatar()
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // Check if user has local avatar
-        if ($user->attributes['avatar'] ?? null) {
-            // Delete avatar file
-            Storage::disk('public')->delete($user->attributes['avatar']);
-
-            // Update user avatar to null (keeps Google avatar_url if exists)
-            $user->update([
-                'avatar' => null,
+            \Log::info('Delete avatar request', [
+                'user_id' => $user->id,
+                'has_avatar' => !empty($user->avatar),
+                'has_avatar_url' => !empty($user->avatar_url),
+                'avatar_value' => $user->avatar,
             ]);
 
-            return back()->with('success', 'Foto profil berhasil dihapus!');
-        }
+            $deleted = false;
 
-        return back()->with('info', 'Tidak ada foto profil lokal untuk dihapus.');
+            // Delete local avatar if exists
+            if ($user->avatar) {
+                \Log::info('Deleting local avatar file', ['path' => $user->avatar]);
+                Storage::disk('public')->delete($user->avatar);
+                $user->update(['avatar' => null]);
+                $deleted = true;
+            }
+
+            // Also clear Google avatar URL if exists
+            if ($user->avatar_url) {
+                $user->update(['avatar_url' => null]);
+                $deleted = true;
+            }
+
+            if (!$deleted) {
+                \Log::warning('No avatar to delete', ['user_id' => $user->id]);
+            }
+
+            // Check if request wants JSON (AJAX)
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Foto profil berhasil dihapus!'
+                ]);
+            }
+
+            return back()->with('success', 'Foto profil berhasil dihapus!');
+
+        } catch (\Exception $e) {
+            \Log::error('Avatar delete failed', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menghapus foto profil.'
+                ], 500);
+            }
+
+            return back()->with('error', 'Gagal menghapus foto profil. Silakan coba lagi.');
+        }
     }
 }
-

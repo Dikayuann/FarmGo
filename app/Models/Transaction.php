@@ -152,4 +152,43 @@ class Transaction extends Model
 
         return $statusMap[$midtransStatus] ?? 'pending';
     }
+
+    /**
+     * Get formatted payment method name
+     */
+    public function getPaymentMethodAttribute()
+    {
+        $paymentType = $this->payment_type;
+        $bank = strtoupper($this->bank ?? '');
+
+        switch ($paymentType) {
+            case 'bank_transfer':
+                return $bank ? "{$bank} Virtual Account" : 'Virtual Account';
+
+            case 'echannel':
+                return 'Mandiri Bill Payment';
+
+            case 'credit_card':
+                return $bank ? "Kartu Kredit {$bank}" : 'Kartu Kredit';
+
+            case 'gopay':
+                return 'GoPay';
+
+            case 'shopeepay':
+                return 'ShopeePay';
+
+            case 'qris':
+                return 'QRIS';
+
+            case 'cstore':
+                return $bank ? ucfirst($bank) : 'Convenience Store';
+
+            case 'akulaku':
+                return 'Akulaku';
+
+            default:
+                return ucfirst(str_replace('_', ' ', $paymentType ?? 'Midtrans'));
+        }
+    }
 }
+

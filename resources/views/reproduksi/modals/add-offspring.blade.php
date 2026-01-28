@@ -3,7 +3,7 @@
 @section('title', 'Tambah Anak')
 
 @section('content')
-    <div class="max-w-3xl mx-auto">
+    <div>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl font-semibold text-gray-900">Tambah Anak ke Manajemen Ternak</h2>
@@ -40,20 +40,25 @@
                         <p class="text-gray-600 mb-1">Jantan:</p>
                         @if($perkawinan->jantan_type === 'owned' && $perkawinan->jantan)
                             <p class="font-semibold text-gray-900">{{ $perkawinan->jantan->nama_hewan }}</p>
-                            <p class="text-xs text-gray-500">{{ $perkawinan->jantan->kode_hewan }} • {{ $perkawinan->jantan->ras_hewan }}</p>
+                            <p class="text-xs text-gray-500">{{ $perkawinan->jantan->kode_hewan }} •
+                                {{ $perkawinan->jantan->ras_hewan }}
+                            </p>
                         @elseif($perkawinan->jantan_type === 'external')
                             <p class="font-semibold text-gray-900">{{ $perkawinan->jantan_external_name ?? 'External' }}</p>
                             <p class="text-xs text-gray-500">External • {{ $perkawinan->jantan_external_breed ?? '-' }}</p>
                         @elseif($perkawinan->jantan_type === 'semen')
                             <p class="font-semibold text-gray-900">Sperma: {{ $perkawinan->semen_code ?? '-' }}</p>
-                            <p class="text-xs text-gray-500">{{ $perkawinan->semen_producer ?? '-' }} • {{ $perkawinan->semen_breed ?? '-' }}</p>
+                            <p class="text-xs text-gray-500">{{ $perkawinan->semen_producer ?? '-' }} •
+                                {{ $perkawinan->semen_breed ?? '-' }}
+                            </p>
                         @endif
                     </div>
                     <div>
                         <p class="text-gray-600 mb-1">Betina:</p>
                         <p class="font-semibold text-gray-900">{{ $perkawinan->betina->nama_hewan }}</p>
                         <p class="text-xs text-gray-500">{{ $perkawinan->betina->kode_hewan }} •
-                            {{ $perkawinan->betina->ras_hewan }}</p>
+                            {{ $perkawinan->betina->ras_hewan }}
+                        </p>
                     </div>
                 </div>
                 <div class="mt-3 pt-3 border-t border-gray-200">
@@ -114,13 +119,26 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Tanggal Lahir <span class="text-red-500">*</span>
                         </label>
-                        <input type="date" name="tanggal_lahir"
-                            value="{{ old('tanggal_lahir', $perkawinan->tanggal_melahirkan ? $perkawinan->tanggal_melahirkan->format('Y-m-d') : date('Y-m-d')) }}"
-                            required 
-                            min="{{ $perkawinan->tanggal_perkawinan->format('Y-m-d') }}"
-                            max="{{ date('Y-m-d') }}"
+                        @php
+                            $estimasiKelahiran = $perkawinan->estimasi_kelahiran;
+                            // Allow 60 days before estimate (premature) and 30 days after (late delivery)
+                            $minDate = $estimasiKelahiran ? $estimasiKelahiran->copy()->subDays(60)->format('Y-m-d') : $perkawinan->tanggal_perkawinan->format('Y-m-d');
+                            $maxDate = $estimasiKelahiran ? $estimasiKelahiran->copy()->addDays(30)->format('Y-m-d') : null;
+                            $defaultDate = $estimasiKelahiran ? $estimasiKelahiran->format('Y-m-d') : date('Y-m-d');
+                        @endphp
+                        <input type="date" name="tanggal_lahir" value="{{ old('tanggal_lahir', $defaultDate) }}" required
+                            min="{{ $minDate }}" @if($maxDate) max="{{ $maxDate }}" @endif
                             class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Tanggal lahir harus setelah tanggal perkawinan ({{ $perkawinan->tanggal_perkawinan->format('d M Y') }})</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            @if($estimasiKelahiran)
+                                Estimasi kelahiran: <strong>{{ $estimasiKelahiran->format('d M Y') }}</strong>
+                                (bisa mundur hingga {{ \Carbon\Carbon::parse($minDate)->format('d M Y') }} atau maju hingga
+                                {{ \Carbon\Carbon::parse($maxDate)->format('d M Y') }})
+                            @else
+                                Tanggal lahir harus setelah tanggal perkawinan
+                                ({{ $perkawinan->tanggal_perkawinan->format('d M Y') }})
+                            @endif
+                        </p>
                     </div>
                 </div>
 
@@ -129,8 +147,8 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Berat Badan (kg) <span class="text-red-500">*</span>
                     </label>
-                    <input type="number" name="berat_badan" value="{{ old('berat_badan') }}" step="0.01" min="0" required
-                        placeholder="Contoh: 2.5"
+                    <input type="number" name="berat_badan" value="{{ old('berat_badan') }}" step="0.01" min="10" max="80"
+                        maxlength="5" required placeholder="Contoh: 25 (berat lahir)"
                         class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent">
                     <p class="text-xs text-gray-500 mt-1">Berat badan saat lahir</p>
                 </div>

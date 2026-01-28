@@ -49,7 +49,7 @@ class GoogleAuthController extends Controller
                 if (!$user->google_id) {
                     $user->update([
                         'google_id' => $googleId,
-                        'avatar_url' => $googleAvatar,
+                        // avatar_url removed - use default initials
                     ]);
                 }
 
@@ -77,8 +77,9 @@ class GoogleAuthController extends Controller
                 'name' => $googleName,
                 'email' => $googleEmail,
                 'google_id' => $googleId,
-                'avatar_url' => $googleAvatar,
+                // avatar_url removed - use default initials
                 'password' => null, // Password null untuk OAuth users
+                'email_verified_at' => now(), // Auto-verify Google users
                 'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
             ]);
 
@@ -153,7 +154,7 @@ class GoogleAuthController extends Controller
                 if (!$user->google_id) {
                     $user->update([
                         'google_id' => $googleId,
-                        'avatar_url' => $avatar,
+                        // avatar_url removed - use default initials
                     ]);
                 }
 
@@ -164,7 +165,7 @@ class GoogleAuthController extends Controller
                 $redirectUrl = $user->isAdmin() ? '/admin' : route('dashboard');
 
                 if (!$user->isAdmin() && !$user->hasActivePremium() && !$user->isOnTrial()) {
-                    $redirectUrl = route('langganan');
+                    $redirectUrl = route('langganan.index');
                 }
 
                 return response()->json([
@@ -180,8 +181,9 @@ class GoogleAuthController extends Controller
                 'name' => $name,
                 'email' => $email,
                 'google_id' => $googleId,
-                'avatar_url' => $avatar,
+                // avatar_url removed - use default initials
                 'password' => null,
+                'email_verified_at' => now(), // Auto-verify Google users
                 'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
             ]);
 

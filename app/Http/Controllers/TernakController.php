@@ -24,6 +24,7 @@ class TernakController extends Controller
         $userId = Auth::id();
 
         $animals = Animal::where('user_id', $userId)
+            ->withCount(['reproduksisAsBetina', 'reproduksisAsJantan', 'healthRecords'])
             ->search($search)
             ->byJenis($jenis)
             ->byStatus($status)
@@ -121,6 +122,11 @@ class TernakController extends Controller
             $data['kode_hewan'] = "{$prefix}-{$userId}-" . str_pad($number, 3, '0', STR_PAD_LEFT);
         }
 
+        // Set initial weight (immutable baseline)
+        if (isset($data['berat_badan'])) {
+            $data['berat_badan_awal'] = $data['berat_badan'];
+        }
+
         $animal = Animal::create($data);
 
         // Generate QR Code
@@ -158,6 +164,7 @@ class TernakController extends Controller
     public function show(string $id)
     {
         $animal = Animal::where('user_id', Auth::id())
+            ->withCount(['reproduksisAsBetina', 'reproduksisAsJantan', 'healthRecords'])
             ->with([
                 'healthRecords' => function ($query) {
                     $query->orderBy('tanggal_pemeriksaan', 'desc');
@@ -175,7 +182,24 @@ class TernakController extends Controller
             'weight_change' => $this->calculateWeightChange($animal),
         ];
 
-        return view('ternak.show', compact('animal', 'healthStats'));
+        // AI Health Assessment
+        $aiAnalyzer = new \App\Services\AiHealthAnalyzer();
+        $riskScore = $aiAnalyzer->calculateHealthRiskScore($animal);
+        $recommendations = $aiAnalyzer->generateSmartRecommendations($animal);
+
+        // Determine risk level
+        if ($riskScore >= 80) {
+            $riskLevel = 'Tinggi';
+            $riskColor = 'red';
+        } elseif ($riskScore >= 60) {
+            $riskLevel = 'Sedang';
+            $riskColor = 'orange';
+        } else {
+            $riskLevel = 'Rendah';
+            $riskColor = 'green';
+        }
+
+        return view('ternak.show', compact('animal', 'healthStats', 'riskScore', 'riskLevel', 'riskColor', 'recommendations'));
     }
 
     /**
@@ -184,7 +208,13 @@ class TernakController extends Controller
     public function update(StoreAnimalRequest $request, string $id)
     {
         $animal = Animal::where('user_id', Auth::id())->findOrFail($id);
-        $animal->update($request->validated());
+
+        $data = $request->validated();
+
+        // Prevent modification of initial weight (immutable)
+        unset($data['berat_badan_awal']);
+
+        $animal->update($data);
 
         // Regenerate QR Code
         $this->generateQRCode($animal);
@@ -199,6 +229,68 @@ class TernakController extends Controller
     public function destroy(string $id)
     {
         $animal = Animal::where('user_id', Auth::id())->findOrFail($id);
+
+        // Validation 1: Check if betina is pregnant
+        if ($animal->jenis_kelamin === 'betina') {
+            $activePregnancy = \App\Models\Perkawinan::where('betina_id', $animal->id)
+                ->where('status_reproduksi', 'bunting')
+                ->exists();
+
+            if ($activePregnancy) {
+                return back()->withErrors([
+                    'error' => 'Tidak dapat menghapus ternak yang sedang bunting. Silakan ubah status reproduksi terlebih dahulu atau tunggu hingga melahirkan.'
+                ]);
+            }
+        }
+
+        // Validation 2: Check if animal has offspring
+        // Get all perkawinan IDs where this animal is parent
+        $perkawinanIds = \App\Models\Perkawinan::where(function ($query) use ($animal) {
+            $query->where('jantan_id', $animal->id)
+                ->orWhere('betina_id', $animal->id);
+        })->pluck('id');
+
+        // Count offspring from those perkawinans
+        $offspringCount = Animal::whereIn('perkawinan_id', $perkawinanIds)->count();
+
+        if ($offspringCount > 0) {
+            return back()->withErrors([
+                'error' => "Tidak dapat menghapus ternak yang memiliki {$offspringCount} anak. Anak-anak akan kehilangan informasi orang tua jika induk dihapus."
+            ]);
+        }
+
+        // Validation 3: Check if animal is offspring (has parent breeding record)
+        // This is allowed, but we need to handle it properly
+        if ($animal->perkawinan_id) {
+            // Clear the perkawinan_id reference before deleting
+            $animal->perkawinan_id = null;
+            $animal->save();
+        }
+
+        // Delete QR code file if exists
+        if ($animal->qr_url) {
+            $qrPath = public_path('storage/qrcodes/qr_' . $animal->kode_hewan . '.svg');
+            if (file_exists($qrPath)) {
+                unlink($qrPath);
+            }
+        }
+
+        // Delete associated breeding records (only those without offspring)
+        \App\Models\Perkawinan::where(function ($query) use ($animal) {
+            $query->where('jantan_id', $animal->id)
+                ->orWhere('betina_id', $animal->id);
+        })->delete();
+
+        // Delete associated health records
+        $animal->healthRecords()->delete();
+
+        // Delete associated notifications
+        \App\Models\Notifikasi::where('animal_id', $animal->id)->delete();
+
+        // Clear user-specific cache
+        $userId = Auth::id();
+        Cache::forget("ternak_stats_user_{$userId}");
+
         $animal->delete();
 
         return redirect()->route('ternak.index')
@@ -220,7 +312,8 @@ class TernakController extends Controller
 
         if ($records->count() == 1) {
             $latest = $records->get(0)->berat_badan;
-            $initial = $animal->berat_badan;
+            // Use initial weight as baseline
+            $initial = $animal->berat_badan_awal ?? $animal->berat_badan;
             return round($latest - $initial, 2);
         }
 

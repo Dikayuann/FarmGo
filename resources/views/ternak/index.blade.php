@@ -38,7 +38,7 @@
                     <div class="flex-1">
                         <p class="text-orange-800 font-semibold">{{ session('warning') }}</p>
                     </div>
-                    <a href="{{ route('langganan') }}"
+                    <a href="{{ route('langganan.index') }}"
                         class="flex-shrink-0 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
                         Upgrade Sekarang
                     </a>
@@ -60,7 +60,7 @@
                             <p class="text-red-800 font-semibold">{{ $error }}</p>
                         @endforeach
                     </div>
-                    <a href="{{ route('langganan') }}"
+                    <a href="{{ route('langganan.index') }}"
                         class="flex-shrink-0 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
                         Upgrade ke Premium
                     </a>
@@ -97,7 +97,7 @@
                             @endif
                         </p>
                         <div class="flex items-center gap-3">
-                            <a href="{{ route('langganan') }}"
+                            <a href="{{ route('langganan.index') }}"
                                 class="inline-flex items-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white px-6 py-3 rounded-lg font-semibold hover:from-orange-700 hover:to-red-700 transition shadow-md">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

@@ -4,7 +4,7 @@
 @section('page-title', 'Tambah Catatan Kesehatan')
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div>
     {{-- Back Button --}}
     <div class="mb-6">
         <a href="{{ route('kesehatan.index') }}"
@@ -40,16 +40,19 @@
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {{-- Animal Select - Searchable --}}
-                        <div class="md:col-span-2" x-data="{
+                        <div class="md:col-span-2 relative" x-data="{
                             open: false,
                             search: '',
                             selected: null,
+                            weightData: null,
+                            loadingWeight: false,
                             animals: {{ json_encode($animals->map(fn($a) => ['id' => $a->id, 'kode' => $a->kode_hewan, 'nama' => $a->nama_hewan, 'jenis' => ucfirst($a->jenis_hewan)])) }},
-                            init() {
+                            async init() {
                                 // Pre-select animal if provided
                                 let preselectedId = {{ $animalId ?? 'null' }};
                                 if (preselectedId) {
                                     this.selected = this.animals.find(a => a.id == preselectedId);
+                                    await this.fetchWeightData(preselectedId);
                                 }
                             },
                             get filteredAnimals() {
@@ -60,10 +63,31 @@
                                     animal.jenis.toLowerCase().includes(this.search.toLowerCase())
                                 );
                             },
-                            selectAnimal(animal) {
+                            async selectAnimal(animal) {
                                 this.selected = animal;
                                 this.open = false;
                                 this.search = '';
+                                await this.fetchWeightData(animal.id);
+                            },
+                            async fetchWeightData(animalId) {
+                                this.loadingWeight = true;
+                                this.weightData = null; // Reset first
+                                try {
+                                    console.log('Fetching weight data for animal:', animalId);
+                                    const response = await fetch(`/animals/${animalId}/weight-history`);
+                                    console.log('Response status:', response.status);
+                                    if (response.ok) {
+                                        const data = await response.json();
+                                        console.log('Weight data received:', data);
+                                        this.weightData = data;
+                                    } else {
+                                        console.error('Failed to fetch weight data:', response.statusText);
+                                    }
+                                } catch (error) {
+                                    console.error('Error fetching weight data:', error);
+                                } finally {
+                                    this.loadingWeight = false;
+                                }
                             }
                         }" @click.away="open = false">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -119,6 +143,76 @@
                             @error('animal_id')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
+                            
+                            {{-- Weight Information Section (Dynamic) --}}
+                            <div x-show="weightData" x-transition class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h3 class="font-semibold text-blue-900 mb-3 flex items-center">
+                                    <i class="fa-solid fa-weight-scale mr-2"></i>
+                                    📊 Informasi Berat Badan
+                                </h3>
+                                
+                                <div x-show="loadingWeight" class="text-center py-4">
+                                    <i class="fa-solid fa-spinner fa-spin text-blue-600 text-2xl"></i>
+                                    <p class="text-sm text-gray-600 mt-2">Memuat data berat badan...</p>
+                                </div>
+                                
+                                <div x-show="!loadingWeight" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <!-- Berat Awal (Baseline) -->
+                                    <div>
+                                        <span class="text-sm text-gray-600 block mb-1">
+                                            <i class="fa-solid fa-lock text-xs mr-1"></i>Berat Badan Awal (Baseline):
+                                        </span>
+                                        <template x-if="weightData?.initial_weight">
+                                            <div>
+                                                <span class="font-bold text-xl text-gray-700" x-text="parseFloat(weightData.initial_weight).toFixed(1) + ' kg'"></span>
+                                                <p class="text-xs text-gray-500 mt-0.5">Saat pendaftaran hewan</p>
+                                            </div>
+                                        </template>
+                                        <template x-if="!weightData?.initial_weight">
+                                            <span class="text-gray-400 italic text-sm">Belum ada data</span>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- Berat Terkini -->
+                                    <div>
+                                        <span class="text-sm text-gray-600 block mb-1">
+                                            <i class="fa-solid fa-weight-scale text-xs mr-1"></i>Berat Terkini (Data Hewan):
+                                        </span>
+                                        <template x-if="weightData?.current_weight">
+                                            <div>
+                                                <span class="font-bold text-2xl text-blue-600" x-text="parseFloat(weightData.current_weight).toFixed(1) + ' kg'"></span>
+                                                <!-- Growth indicator -->
+                                                <template x-if="weightData?.initial_weight">
+                                                    <p class="text-xs font-medium mt-0.5" 
+                                                       :class="(parseFloat(weightData.current_weight) - parseFloat(weightData.initial_weight)) >= 0 ? 'text-green-600' : 'text-red-600'"
+                                                       x-text="((parseFloat(weightData.current_weight) - parseFloat(weightData.initial_weight)) >= 0 ? '+' : '') + 
+                                                               (parseFloat(weightData.current_weight) - parseFloat(weightData.initial_weight)).toFixed(1) + ' kg dari awal'">
+                                                    </p>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        <template x-if="!weightData?.current_weight">
+                                            <span class="text-gray-400 italic text-sm">Belum ada data</span>
+                                        </template>
+                                    </div>
+                                    
+                                    <div x-show="weightData?.history && weightData.history.length > 0">
+                                        <span class="text-sm text-gray-600 block mb-2">Riwayat Berat Badan:</span>
+                                        <div class="space-y-1 max-h-24 overflow-y-auto">
+                                            <template x-for="record in weightData?.history || []" :key="record.date">
+                                                <div class="flex justify-between text-sm bg-white px-2 py-1 rounded">
+                                                    <span class="text-gray-600" x-text="record.date"></span>
+                                                    <span class="font-semibold text-blue-700" x-text="record.weight + ' kg'"></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
+                                    <div x-show="!weightData?.history || weightData.history.length === 0" class="md:col-span-2">
+                                        <span class="text-gray-400 italic text-sm">Belum ada riwayat berat badan dari pemeriksaan kesehatan</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         {{-- Tanggal Pemeriksaan --}}
@@ -155,7 +249,7 @@
                             <label for="berat_badan" class="block text-sm font-medium text-gray-700 mb-2">
                                 Berat Badan (kg) <span class="text-red-500">*</span>
                             </label>
-                            <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="0" required value="{{ old('berat_badan') }}"
+                            <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="0" required value="{{ old('berat_badan') }}" max="3000" maxlength="7"
                                 placeholder="Contoh: 350.5"
                                 class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
                             @error('berat_badan')
@@ -300,6 +394,170 @@
                                     placeholder="Catatan lain yang perlu dicatat..."
                                     class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">{{ old('catatan') }}</textarea>
                                 @error('catatan')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Divider --}}
+                <div class="border-t border-gray-200 my-6"></div>
+
+                {{-- Informasi Vaksinasi (Opsional) - Collapsible --}}
+                <div x-data="{ showVaksinasi: false }">
+                    <button type="button" @click="showVaksinasi = !showVaksinasi"
+                        class="w-full flex items-center justify-between text-lg font-semibold text-gray-700 hover:text-emerald-600 transition py-2">
+                        <span class="flex items-center">
+                            <i class="fa-solid fa-syringe text-emerald-600 mr-2"></i>
+                            Informasi Vaksinasi (Opsional)
+                        </span>
+                        <i class="fa-solid transition-transform duration-200"
+                            :class="showVaksinasi ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+
+                    <div x-show="showVaksinasi" x-collapse class="mt-4">
+                        <div class="bg-blue-50 p-4 rounded-lg mb-4">
+                            <p class="text-sm text-blue-800">
+                                <i class="fa-solid fa-info-circle mr-2"></i>
+                                Isi bagian ini jika pemeriksaan kesehatan ini termasuk vaksinasi
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {{-- Jenis Vaksin --}}
+                            <div>
+                                <label for="jenis_vaksin" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Jenis Vaksin
+                                </label>
+                                <input type="text" id="jenis_vaksin" name="jenis_vaksin" 
+                                    value="{{ old('jenis_vaksin') }}"
+                                    list="vaksin-suggestions"
+                                    placeholder="Contoh: Antraks, PMK, Brucellosis"
+                                    class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
+                                <datalist id="vaksin-suggestions">
+                                    <option value="Antraks">
+                                    <option value="Brucellosis">
+                                    <option value="PMK (Penyakit Mulut dan Kuku)">
+                                    <option value="SE (Septicaemia Epizootica)">
+                                    <option value="Rabies">
+                                    <option value="BEF (Bovine Ephemeral Fever)">
+                                    <option value="LSD (Lumpy Skin Disease)">
+                                </datalist>
+                                @error('jenis_vaksin')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Dosis --}}
+                            <div>
+                                <label for="dosis_vaksin" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Dosis
+                                </label>
+                                <input type="text" id="dosis_vaksin" name="dosis_vaksin" 
+                                    value="{{ old('dosis_vaksin') }}"
+                                    placeholder="Contoh: 2 ml, 1 dosis"
+                                    class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
+                                @error('dosis_vaksin')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Rute Pemberian --}}
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Rute Pemberian
+                                </label>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <label class="relative flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition">
+                                        <input type="radio" name="rute_pemberian" value="oral"
+                                            {{ old('rute_pemberian') == 'oral' ? 'checked' : '' }}
+                                            class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Oral</span>
+                                    </label>
+                                    <label class="relative flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition">
+                                        <input type="radio" name="rute_pemberian" value="injeksi_im"
+                                            {{ old('rute_pemberian') == 'injeksi_im' ? 'checked' : '' }}
+                                            class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Injeksi IM</span>
+                                    </label>
+                                    <label class="relative flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition">
+                                        <input type="radio" name="rute_pemberian" value="injeksi_sc"
+                                            {{ old('rute_pemberian') == 'injeksi_sc' ? 'checked' : '' }}
+                                            class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Injeksi SC</span>
+                                    </label>
+                                    <label class="relative flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-emerald-50 transition">
+                                        <input type="radio" name="rute_pemberian" value="injeksi_iv"
+                                            {{ old('rute_pemberian') == 'injeksi_iv' ? 'checked' : '' }}
+                                            class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                                        <span class="ml-2 text-sm font-medium text-gray-700">Injeksi IV</span>
+                                    </label>
+                                </div>
+                                @error('rute_pemberian')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Masa Penarikan --}}
+                            <div>
+                                <label for="masa_penarikan" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Masa Penarikan
+                                </label>
+                                <div class="relative">
+                                    <input type="number" id="masa_penarikan" name="masa_penarikan" 
+                                        value="{{ old('masa_penarikan', 0) }}"
+                                        min="0"
+                                        placeholder="0"
+                                        class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2 pr-12">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 text-sm">
+                                        hari
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs text-gray-500">Withdrawal period sebelum produk dapat dikonsumsi</p>
+                                @error('masa_penarikan')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Nama Dokter/Petugas Vaksinasi --}}
+                            <div>
+                                <label for="nama_dokter_vaksin" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Nama Dokter/Petugas
+                                </label>
+                                <input type="text" id="nama_dokter_vaksin" name="nama_dokter_vaksin" 
+                                    value="{{ old('nama_dokter_vaksin') }}"
+                                    placeholder="Nama dokter hewan atau petugas"
+                                    class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
+                                @error('nama_dokter_vaksin')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Jadwal Vaksinasi Berikutnya --}}
+                            <div class="md:col-span-2">
+                                <label for="jadwal_vaksin_berikutnya" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Jadwal Vaksinasi Berikutnya
+                                </label>
+                                <input type="date" id="jadwal_vaksin_berikutnya" name="jadwal_vaksin_berikutnya" 
+                                    value="{{ old('jadwal_vaksin_berikutnya') }}"
+                                    min="{{ now()->addDay()->format('Y-m-d') }}"
+                                    class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
+                                <p class="mt-1 text-xs text-gray-500">Anda akan menerima notifikasi pengingat jika diisi</p>
+                                @error('jadwal_vaksin_berikutnya')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- Catatan Vaksinasi --}}
+                            <div class="md:col-span-2">
+                                <label for="catatan_vaksin" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Catatan Vaksinasi
+                                </label>
+                                <textarea id="catatan_vaksin" name="catatan_vaksin" rows="2"
+                                    placeholder="Catatan khusus terkait vaksinasi..."
+                                    class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">{{ old('catatan_vaksin') }}</textarea>
+                                @error('catatan_vaksin')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

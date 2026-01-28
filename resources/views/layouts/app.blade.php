@@ -4,6 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>@yield('title', 'FarmGo')</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -20,8 +24,25 @@
             font-family: 'Inter', sans-serif;
         }
 
+
         .sidebar-transition {
             transition: all 0.3s ease-in-out;
+        }
+
+        /* Custom Toast Styling */
+        .swal-toast-custom {
+            border-radius: 16px !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .swal-toast-title {
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            line-height: 1.4 !important;
+        }
+
+        .swal-toast-progress {
+            height: 3px !important;
         }
     </style>
 </head>
@@ -36,7 +57,7 @@
         <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-gray-200
                       transform -translate-x-full lg:translate-x-0 sidebar-transition flex flex-col h-full shrink-0">
 
-            <div class="h-20 flex items-center justify-center px-6 border-b border-gray-100">
+            <div class="h-16 flex items-center justify-center px-6 border-b border-gray-100">
                 <div class="flex items-center justify-center text-green-600">
                     <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo" class="max-w-10 max-h-10">
                 </div>
@@ -68,7 +89,7 @@
 
                 <a href="{{ route('kesehatan.index') }}" title="Monitoring Kesehatan"
                     class="nav-item flex items-center px-4 py-2.5 rounded-lg transition group relative tooltip-trigger
-                    {{ request()->routeIs('kesehatan*') ? 'bg-emerald-600 text-white font-semibold shadow-md' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 font-medium' }}">
+                    {{ request()->routeIs('kesehatan*') || request()->routeIs('vaksinasi*') ? 'bg-emerald-600 text-white font-semibold shadow-md' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 font-medium' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
@@ -98,7 +119,7 @@
                     <span class="nav-text whitespace-nowrap ml-3">Ekspor Data</span>
                 </a>
 
-                <a href="{{ route('langganan') }}" title="Harga / Langganan"
+                <a href="{{ route('langganan.index') }}" title="Harga / Langganan"
                     class="nav-item flex items-center px-4 py-2.5 rounded-lg transition group relative tooltip-trigger
                     {{ request()->routeIs('langganan*') ? 'bg-emerald-600 text-white font-semibold shadow-md' : 'text-gray-600 hover:bg-emerald-50 hover:text-emerald-700 font-medium' }}">
                     <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +171,7 @@
         <main id="main-content" class="flex-1 flex flex-col h-screen overflow-y-auto sidebar-transition">
 
             <header
-                class="bg-white h-20 border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10">
+                class="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-10">
                 <div class="flex items-center gap-4">
                     <button onclick="toggleMobileSidebar()" class="lg:hidden text-gray-500 hover:text-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -348,6 +369,9 @@
                     </div>
                 </div>
             </header>
+
+            {{-- Subscription Status Banner --}}
+            @include('components.subscription-banner')
 
             <div class="p-8 space-y-8 bg-gray-100/50">
                 @yield('content')
@@ -624,6 +648,77 @@
             localStorage.setItem('sidebarCollapsed', 'false');
         }
     </script>
+
+    {{-- Global Toast Notification System - CLEAN & MODERN --}}
+    @if(session('success') || session('error') || session('info'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 4000,
+                    timerProgressBar: true,
+                    width: '350px', // Slightly wider for better text flow
+                    padding: '16px',
+                    didOpen: (toast) => {
+                        toast.style.marginTop = '74px'; // Below header
+                        toast.style.marginRight = '24px';
+                        toast.style.zIndex = '9999';
+                        toast.style.fontSize = '14px';
+                        toast.style.fontWeight = '500';
+                        toast.addEventListener('mouseenter', Swal.stopTimer);
+                        toast.addEventListener('mouseleave', Swal.resumeTimer);
+                    },
+                    customClass: {
+                        popup: 'swal-toast-custom',
+                        title: 'swal-toast-title',
+                        timerProgressBar: 'swal-toast-progress'
+                    }
+                });
+
+                @if(session('success'))
+                    Toast.fire({
+                        icon: 'success',
+                        title: '{{ session('success') }}',
+                        background: '#ffffff',
+                        color: '#065f46',
+                        iconColor: '#10b981',
+                        customClass: {
+                            popup: 'rounded-2xl shadow-2xl border-2 border-emerald-500'
+                        }
+                    });
+                @endif
+
+                @if(session('error'))
+                    Toast.fire({
+                        icon: 'error',
+                        title: '{{ session('error') }}',
+                        background: '#ffffff',
+                        color: '#991b1b',
+                        iconColor: '#ef4444',
+                        customClass: {
+                            popup: 'rounded-2xl shadow-2xl border-2 border-red-500'
+                        }
+                    });
+                @endif
+
+                @if(session('info'))
+                    Toast.fire({
+                        icon: 'info',
+                        title: '{{ session('info') }}',
+                        background: '#ffffff',
+                        color: '#1e40af',
+                        iconColor: '#3b82f6',
+                        customClass: {
+                            popup: 'rounded-2xl shadow-2xl border-2 border-blue-500'
+                        }
+                    });
+                @endif
+                                    });
+        </script>
+    @endif
+
     @stack('scripts')
 </body>
 

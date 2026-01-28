@@ -5,7 +5,7 @@
 
 @section('content')
 
-    <div class="max-w-6xl mx-auto">
+    <div>
         
         {{-- Current Subscription Card --}}
         @if($currentSubscription)
@@ -134,7 +134,7 @@
 
         {{-- Back Button --}}
         <div class="mt-6">
-            <a href="{{ route('langganan') }}" 
+            <a href="{{ route('langganan.index') }}" 
                 class="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-semibold">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>

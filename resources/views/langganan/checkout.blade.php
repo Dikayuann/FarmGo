@@ -7,7 +7,7 @@
 
     {{-- Back Button --}}
     <div class="mb-8">
-        <a href="{{ route('langganan') }}"
+        <a href="{{ route('langganan.index') }}"
             class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
@@ -351,7 +351,7 @@
                                     text: 'Anda bisa melanjutkan pembayaran kapan saja',
                                     confirmButtonColor: '#059669'
                                 }).then(() => {
-                                    window.location.href = '{{ route('langganan') }}';
+                                    window.location.href = '{{ route('langganan.index') }}';
                                 });
                             }
                         });

@@ -5,7 +5,7 @@
 
 @section('content')
 
-    <div class="max-w-4xl mx-auto">
+    <div>
 
         {{-- Order Header --}}
         <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white mb-6 shadow-xl">
@@ -72,25 +72,19 @@
                 @if($transaction->payment_type)
                     <div class="flex items-center justify-between pb-4 border-b border-gray-100">
                         <span class="text-gray-600">Metode Pembayaran</span>
-                        <div class="flex items-center gap-2">
-                            @if($transaction->bank)
-                                <img src="https://via.placeholder.com/32x32/3b82f6/ffffff?text={{ strtoupper($transaction->bank) }}"
-                                    alt="{{ $transaction->bank }}" class="w-8 h-8 rounded">
+                        <span class="font-semibold text-gray-900">
+                            @if($transaction->payment_type === 'bank_transfer' && $transaction->bank)
+                                {{ strtoupper($transaction->bank) }} Virtual Account
+                            @elseif($transaction->payment_type === 'gopay')
+                                GoPay
+                            @elseif($transaction->payment_type === 'qris')
+                                QRIS
+                            @elseif($transaction->payment_type === 'credit_card')
+                                Credit/Debit Card
+                            @else
+                                {{ ucfirst(str_replace('_', ' ', $transaction->payment_type)) }}
                             @endif
-                            <span class="font-semibold text-gray-900">
-                                @if($transaction->payment_type === 'bank_transfer' && $transaction->bank)
-                                    {{ strtoupper($transaction->bank) }} Virtual Account
-                                @elseif($transaction->payment_type === 'gopay')
-                                    GoPay
-                                @elseif($transaction->payment_type === 'qris')
-                                    QRIS
-                                @elseif($transaction->payment_type === 'credit_card')
-                                    Credit/Debit Card
-                                @else
-                                    {{ ucfirst(str_replace('_', ' ', $transaction->payment_type)) }}
-                                @endif
-                            </span>
-                        </div>
+                        </span>
                     </div>
                 @endif
 
@@ -291,7 +285,7 @@
                 </svg>
                 Cek Status Pembayaran
             </button>
-            <a href="{{ route('langganan') }}"
+            <a href="{{ route('langganan.index') }}"
                 class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-4 rounded-xl transition-colors shadow-lg text-center">
                 Kembali
             </a>
@@ -341,7 +335,7 @@
                         text: 'Waktu pembayaran telah habis. Silakan buat transaksi baru.',
                         confirmButtonColor: '#dc2626'
                     }).then(() => {
-                        window.location.href = '{{ route('langganan') }}';
+                        window.location.href = '{{ route('langganan.index') }}';
                     });
                     return;
                 }
@@ -501,7 +495,7 @@
                                     text: 'Silakan buat transaksi baru',
                                     confirmButtonColor: '#dc2626'
                                 }).then(() => {
-                                    window.location.href = '{{ route('langganan') }}';
+                                    window.location.href = '{{ route('langganan.index') }}';
                                 });
                             }
                         }

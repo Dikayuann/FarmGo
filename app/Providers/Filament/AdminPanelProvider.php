@@ -27,7 +27,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->loginRouteSlug('/login') // Redirect to main login page
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -40,6 +40,9 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 AccountWidget::class,
                 FilamentInfoWidget::class,
+                \App\Filament\Widgets\StatsOverview::class,
+                \App\Filament\Widgets\RecentActivity::class,
+                \App\Filament\Widgets\FailedLoginAttempts::class,
             ])
             ->middleware([
                 EncryptCookies::class,

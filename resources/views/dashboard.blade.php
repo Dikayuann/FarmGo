@@ -12,7 +12,7 @@
         <div
             class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
             <div>
-                <p class="text-sm font-medium text-gray-500 mb-2">Total Ternak</p>
+                <p class="text-sm font-medium text-gray-500 mb-2">Total <br>Ternak</p>
                 <h3 class="text-4xl font-bold text-gray-800">{{$totalTernak}}</h3>
             </div>
             <div
@@ -92,6 +92,41 @@
                 @else
                     <p class="text-gray-400 text-sm">Data tidak tersedia</p>
                 @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- AI Health Insights Section --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {{-- AI Health Insights Widget --}}
+        <div class="lg:col-span-1">
+            @include('components.ai-health-insights')
+        </div>
+
+        {{-- Calendar & Event Timeline --}}
+        <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- Mini Calendar --}}
+                <div>
+                    @if(isset($calendarData))
+                        @include('components.calendar-widget')
+                    @else
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <p class="text-gray-400 text-center">Calendar tidak tersedia</p>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Upcoming Events Timeline --}}
+                <div>
+                    @if(isset($upcomingEvents))
+                        @include('components.event-timeline')
+                    @else
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                            <p class="text-gray-400 text-center">Event timeline tidak tersedia</p>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -226,6 +261,6 @@
                         }
                     });
                 @endif
-            });
+                });
     </script>
 @endpush

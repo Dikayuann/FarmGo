@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use App\Rules\NotDisposableEmail;
+use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 
 class RegisterController extends Controller
 {
@@ -20,7 +22,7 @@ class RegisterController extends Controller
             }
 
             if (!$user->hasActivePremium() && !$user->isOnTrial()) {
-                return redirect()->route('langganan')
+                return redirect()->route('langganan.index')
                     ->with('info', 'Silakan pilih paket langganan untuk melanjutkan.');
             }
 
@@ -33,11 +35,11 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         // Validasi input
-        $request->validate([
+        $validationRules = [
             'full_name' => 'required|string|max:255',
             'farm_name' => 'nullable|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|max:20',
+            'email' => ['required', 'email', 'unique:users,email', new NotDisposableEmail()],
+            'phone' => ['nullable', 'string', 'regex:/^(\+62|62|0)8[0-9]{8,11}$/'],
             'password' => [
                 'required',
                 'string',
@@ -46,10 +48,21 @@ class RegisterController extends Controller
                 'regex:/[A-Z]/',
                 'regex:/[0-9]/',
             ],
-        ], [
+        ];
+
+        $validationMessages = [
+            'phone.regex' => 'Format nomor telepon tidak valid. Gunakan format 08xxxxxxxxxx (10-13 digit) atau +628xxxxxxxxxx',
             'password.min' => 'Password minimal 8 karakter.',
             'password.regex' => 'Password harus mengandung huruf besar, huruf kecil, dan angka.',
-        ]);
+        ];
+
+        // Only validate Turnstile in production
+        if (config('app.env') === 'production') {
+            $validationRules['cf-turnstile-response'] = ['required', new Turnstile];
+            $validationMessages['cf-turnstile-response.required'] = 'Silakan selesaikan verifikasi Cloudflare Turnstile terlebih dahulu.';
+        }
+
+        $request->validate($validationRules, $validationMessages);
 
         // Buat user baru
         $user = User::create([
@@ -61,10 +74,11 @@ class RegisterController extends Controller
             'role' => User::ROLE_TRIAL, // Temporary role, akan diupdate setelah pilih paket
         ]);
 
-        // Login otomatis setelah registrasi
+        // Auto-login after registration
         Auth::login($user);
 
-        // Redirect ke pricing page untuk memilih langganan
-        return redirect()->route('langganan', ['first_time' => '1']);
+        // Redirect to subscription page
+        return redirect()->route('langganan.index')
+            ->with('success', 'Akun berhasil dibuat! Silakan pilih paket langganan untuk melanjutkan.');
     }
 }

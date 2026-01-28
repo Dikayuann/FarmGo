@@ -4,7 +4,7 @@
 @section('page-title', 'Edit Catatan Kesehatan')
 
 @section('content')
-    <div class="max-w-4xl mx-auto">
+    <div>
         {{-- Back Button --}}
         <div class="mb-6">
             <a href="{{ route('kesehatan.index') }}"
@@ -40,86 +40,66 @@
                             Informasi Wajib
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {{-- Animal Select - Searchable --}}
-                            <div class="md:col-span-2" x-data="{
-                                    open: false,
-                                    search: '',
-                                    selected: null,
-                                    animals: {{ json_encode($animals->map(fn($a) => ['id' => $a->id, 'kode' => $a->kode_hewan, 'nama' => $a->nama_hewan, 'jenis' => ucfirst($a->jenis_hewan)])) }},
-                                    init() {
-                                        // Pre-select current animal
-                                        this.selected = this.animals.find(a => a.id == {{ $healthRecord->animal_id }});
-                                    }
-                                    get filteredAnimals() {
-                                        if (this.search === '') return this.animals;
-                                        return this.animals.filter(animal => 
-                                            animal.kode.toLowerCase().includes(this.search.toLowerCase()) ||
-                                            animal.nama.toLowerCase().includes(this.search.toLowerCase()) ||
-                                            animal.jenis.toLowerCase().includes(this.search.toLowerCase())
-                                        );
-                                    },
-                                    selectAnimal(animal) {
-                                        this.selected = animal;
-                                        this.open = false;
-                                        this.search = '';
-                                    }
-                                }" @click.away="open = false">
+                            {{-- Animal (Read-only) --}}
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
                                     Hewan <span class="text-red-500">*</span>
                                 </label>
 
                                 {{-- Hidden input for form submission --}}
-                                <input type="hidden" name="animal_id" :value="selected?.id" required>
+                                <input type="hidden" name="animal_id" value="{{ $healthRecord->animal_id }}" required>
 
-                                {{-- Custom Select Button --}}
-                                <button type="button" @click="open = !open"
-                                    class="relative w-full bg-white border border-gray-300 rounded-lg shadow-sm pl-3 pr-10 py-3 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                                    <span class="block truncate"
-                                        x-text="selected ? `${selected.kode} - ${selected.nama} (${selected.jenis})` : 'Pilih atau cari hewan...'"></span>
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                                        <i class="fa-solid fa-chevron-down text-gray-400"></i>
+                                {{-- Display field (readonly) --}}
+                                <div
+                                    class="relative w-full bg-gray-50 border border-gray-300 rounded-lg shadow-sm pl-3 pr-10 py-3 text-left cursor-not-allowed">
+                                    <span class="block truncate text-gray-700">
+                                        {{ $healthRecord->animal->kode_hewan }} - {{ $healthRecord->animal->nama_hewan }}
+                                        ({{ ucfirst($healthRecord->animal->jenis_hewan) }})
                                     </span>
-                                </button>
-
-                                {{-- Dropdown --}}
-                                <div x-show="open" x-transition
-                                    class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg py-1 ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none">
-
-                                    {{-- Search Input --}}
-                                    <div class="sticky top-0 bg-white px-2 py-2 border-b">
-                                        <input type="text" x-model="search" @click.stop
-                                            placeholder="Cari kode, nama, atau jenis..."
-                                            class="w-full border-gray-300 rounded-md shadow-sm focus:ring-emerald-500 focus:border-emerald-500">
-                                    </div>
-
-                                    {{-- Animal List --}}
-                                    <template x-for="animal in filteredAnimals" :key="animal.id">
-                                        <div @click="selectAnimal(animal)"
-                                            class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-emerald-50 transition"
-                                            :class="selected?.id === animal.id ? 'bg-emerald-100' : ''">
-                                            <span class="block truncate"
-                                                :class="selected?.id === animal.id ? 'font-semibold' : 'font-normal'">
-                                                <span x-text="animal.kode"></span> -
-                                                <span x-text="animal.nama"></span>
-                                                (<span x-text="animal.jenis"></span>)
-                                            </span>
-                                            <span x-show="selected?.id === animal.id"
-                                                class="absolute inset-y-0 right-0 flex items-center pr-4 text-emerald-600">
-                                                <i class="fa-solid fa-check"></i>
-                                            </span>
-                                        </div>
-                                    </template>
-
-                                    {{-- No Results --}}
-                                    <div x-show="filteredAnimals.length === 0" class="px-3 py-2 text-gray-500 text-sm">
-                                        Tidak ada hewan yang ditemukan
-                                    </div>
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                        <i class="fa-solid fa-lock text-gray-400 text-sm"></i>
+                                    </span>
                                 </div>
-
-                                @error('animal_id')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                <p class="mt-1 text-xs text-gray-500">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    Hewan tidak dapat diubah saat mengedit catatan kesehatan
+                                </p>
                             </div>
+
+                            {{-- Weight Information Section --}}
+                            @if($currentWeight || ($weightHistory && $weightHistory->count() > 0))
+                            <div class="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <h3 class="font-semibold text-blue-900 mb-3 flex items-center">
+                                    <i class="fa-solid fa-weight-scale mr-2"></i>
+                                    📊 Informasi Berat Badan
+                                </h3>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    @if($currentWeight)
+                                    <div>
+                                        <span class="text-sm text-gray-600 block mb-1">Berat Badan Saat Ini (Data Hewan):</span>
+                                        <span class="font-bold text-2xl text-blue-600">{{ number_format($currentWeight, 1) }} kg</span>
+                                    </div>
+                                    @endif
+                                    
+                                    @if($weightHistory && $weightHistory->count() > 0)
+                                    <div>
+                                        <span class="text-sm text-gray-600 block mb-2">Riwayat Berat Badan:</span>
+                                        <div class="space-y-1 max-h-24 overflow-y-auto">
+                                            @foreach($weightHistory as $record)
+                                            <div class="flex justify-between text-sm bg-white px-2 py-1 rounded">
+                                                <span class="text-gray-600">
+                                                    {{ \Carbon\Carbon::parse($record->tanggal_pemeriksaan)->format('d/m/Y') }}
+                                                </span>
+                                                <span class="font-semibold text-blue-700">{{ number_format($record->berat_badan, 1) }} kg</span>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
 
                             {{-- Tanggal Pemeriksaan --}}
                             <div>
@@ -157,9 +137,24 @@
                                 <label for="berat_badan" class="block text-sm font-medium text-gray-700 mb-2">
                                     Berat Badan (kg) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="0" required
+                                <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="0" required max="3000" maxlength="7"
                                     value="{{ old('berat_badan', $healthRecord->berat_badan) }}" placeholder="Contoh: 350.5"
                                     class="block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2">
+                                @php
+                                    $previousWeight = $weightHistory->first()?->berat_badan;
+                                @endphp
+                                @if($previousWeight)
+                                <p class="mt-1 text-xs text-blue-600">
+                                    <i class="fa-solid fa-info-circle mr-1"></i>
+                                    Berat badan sebelumnya: <strong>{{ number_format($previousWeight, 1) }} kg</strong>
+                                    @php
+                                        $diff = $healthRecord->berat_badan - $previousWeight;
+                                        $diffText = $diff > 0 ? '+' . number_format($diff, 1) : number_format($diff, 1);
+                                        $diffColor = $diff > 0 ? 'text-green-600' : ($diff < 0 ? 'text-red-600' : 'text-gray-600');
+                                    @endphp
+                                    <span class="{{ $diffColor }}">({{ $diffText }} kg)</span>
+                                </p>
+                                @endif
                                 @error('berat_badan')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror

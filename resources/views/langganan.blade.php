@@ -13,7 +13,7 @@
     </div>
 
     {{-- Pricing Cards - 3 Tier Layout --}}
-    <div class="max-w-7xl mx-auto">
+    <div class="">
         <div class="grid md:grid-cols-3 gap-8">
 
             {{-- FREE / TRIAL CARD --}}
@@ -324,7 +324,7 @@
 
     {{-- Current Subscription Info (if any) --}}
     @if($activeSubscription && $activeSubscription->isActive())
-        <div class="max-w-7xl mx-auto mt-16">
+        <div class="mt-16">
             <div class="bg-gradient-to-r from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-2xl p-8 shadow-lg">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-6">
@@ -340,7 +340,7 @@
                             <p class="text-gray-600 mt-1">
                                 <span
                                     class="font-semibold">{{ $activeSubscription->paket_langganan == 'premium_monthly' ? 'Premium Bulanan' : 'Premium Tahunan' }}</span>
-                                â€¢ Berlaku hingga {{ $activeSubscription->tanggal_berakhir->format('d M Y') }}
+                                • Berlaku hingga {{ $activeSubscription->tanggal_berakhir->format('d M Y') }}
                             </p>
                         </div>
                     </div>
@@ -355,7 +355,7 @@
 
     {{-- Pending Transaction Alert --}}
     @if($pendingTransaction)
-        <div class="max-w-7xl mx-auto mt-12">
+        <div class="mt-12">
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-8 shadow-lg">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-6">
@@ -369,11 +369,11 @@
                         <div>
                             <p class="font-bold text-xl text-gray-900">Pembayaran Menunggu</p>
                             <p class="text-gray-600 mt-1">
-                                Order <span class="font-mono font-semibold">#{{ $pendingTransaction->order_id }}</span> â€¢
+                                Order <span class="font-mono font-semibold">#{{ $pendingTransaction->order_id }}</span> �
                                 <span class="font-semibold">Rp
                                     {{ number_format($pendingTransaction->gross_amount, 0, ',', '.') }}</span>
                                 @if($pendingTransaction->expired_at)
-                                    â€¢ Kadaluarsa {{ $pendingTransaction->expired_at->diffForHumans() }}
+                                    � Kadaluarsa {{ $pendingTransaction->expired_at->diffForHumans() }}
                                 @endif
                             </p>
                         </div>
@@ -389,7 +389,7 @@
 
     {{-- Trial Period Info --}}
     @if($user->isOnTrial())
-        <div class="max-w-7xl mx-auto mt-12">
+        <div class="mt-12">
             <div class="bg-gradient-to-r from-amber-50 to-yellow-50 border-2 border-amber-300 rounded-2xl p-8 shadow-lg">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-6">
@@ -403,7 +403,7 @@
                         <div>
                             <p class="font-bold text-xl text-gray-900">Trial Period Aktif</p>
                             <p class="text-gray-600 mt-1">
-                                <span class="font-semibold">{{ $user->trialDaysRemaining() }} hari tersisa</span> &middot;
+                                <span class="font-semibold">{{ $user->trialDaysRemaining() }} hari tersisa</span> �
                                 Berakhir {{ $user->trial_ends_at->format('d M Y') }}
                             </p>
                         </div>
@@ -418,7 +418,7 @@
     @endif
 
     {{-- FAQ Section --}}
-    <div class="max-w-4xl mx-auto mt-20">
+    <div class="mt-20">
         <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Pertanyaan yang Sering Diajukan</h2>
         <div class="space-y-6">
             <div class="bg-white rounded-2xl shadow-md p-6 border border-gray-200">

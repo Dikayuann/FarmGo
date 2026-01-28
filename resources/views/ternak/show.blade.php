@@ -4,7 +4,8 @@
 @section('page-title', 'Detail Data Ternak')
 
 @section('content')
-    <div class="flex flex-col gap-6" x-data="{ showEditModal: false, showScanModal: false, currentAnimal: @js($animal) }">
+    <div class="flex flex-col gap-6"
+        x-data="{ showEditModal: false, showScanModal: false, showDeleteModal: false, currentAnimal: @js($animal) }">
         {{-- Back Button --}}
         <div>
             <a href="{{ route('ternak.index') }}"
@@ -27,6 +28,14 @@
                                 class="font-semibold">{{ $animal->kode_hewan }}</span></p>
                     </div>
                     <div class="flex gap-3">
+                        <a href="{{ route('kesehatan.create', ['animal_id' => $animal->id]) }}"
+                            class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg transition font-medium shadow-sm hover:bg-blue-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                                </path>
+                            </svg>
+                            Tambah Kesehatan
+                        </a>
                         <button onclick="openEditModal({{ json_encode($animal) }})"
                             class="inline-flex items-center gap-2 bg-white text-emerald-600 px-4 py-2 rounded-lg transition font-medium shadow-sm hover:bg-emerald-50">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,12 +45,38 @@
                             </svg>
                             Edit Data
                         </button>
+                        <button onclick="checkBeforeDelete()"
+                            class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg transition font-medium shadow-sm hover:bg-red-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                            Hapus Ternak
+                        </button>
                     </div>
                 </div>
             </div>
 
             {{-- Content --}}
             <div class="p-8">
+                {{-- Validation Error Alert --}}
+                @if($errors->has('error'))
+                    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-xl">
+                        <div class="flex items-start gap-3">
+                            <svg class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                                </path>
+                            </svg>
+                            <div class="flex-1">
+                                <p class="text-sm font-bold text-red-900 mb-1">TIDAK DAPAT MENGHAPUS</p>
+                                <p class="text-sm text-red-800">{{ $errors->first('error') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {{-- QR Code Section --}}
                     <div class="lg:col-span-1">
@@ -106,10 +141,38 @@
                                 <p class="text-lg font-semibold text-gray-800">{{ $animal->usia }}</p>
                             </div>
 
-                            {{-- Berat Badan --}}
+                            {{-- Berat Badan Awal --}}
+                            <div class="border-l-4 border-gray-400 pl-4">
+                                <p class="text-sm text-gray-500 mb-1">
+                                    <i class="fa-solid fa-lock text-xs mr-1"></i>Berat Badan Awal
+                                </p>
+                                <p class="text-lg font-semibold text-gray-600">
+                                    {{ $animal->berat_badan_awal ?? $animal->berat_badan }} kg
+                                </p>
+                                <p class="text-xs text-gray-400 mt-0.5">Saat pendaftaran</p>
+                            </div>
+
+                            {{-- Berat Badan Terkini --}}
                             <div class="border-l-4 border-emerald-500 pl-4">
-                                <p class="text-sm text-gray-500 mb-1">Berat Badan</p>
-                                <p class="text-lg font-semibold text-gray-800">{{ $animal->berat_badan }} kg</p>
+                                <p class="text-sm text-gray-500 mb-1">
+                                    <i class="fa-solid fa-weight-scale text-xs mr-1"></i>Berat Badan Terkini
+                                </p>
+                                <p class="text-lg font-bold text-emerald-600">{{ $animal->berat_badan }} kg</p>
+                                @php
+                                    $initialWeight = $animal->berat_badan_awal ?? $animal->berat_badan;
+                                    $currentWeight = $animal->berat_badan;
+                                    $growth = $currentWeight - $initialWeight;
+                                    $growthPercentage = $initialWeight > 0 ? ($growth / $initialWeight) * 100 : 0;
+                                @endphp
+                                @if($growth != 0)
+                                    <p
+                                        class="text-xs {{ $growth >= 0 ? 'text-green-600' : 'text-red-600' }} font-medium mt-0.5">
+                                        {{ $growth >= 0 ? '+' : '' }}{{ round($growth, 2) }} kg
+                                        ({{ $growth >= 0 ? '+' : '' }}{{ round($growthPercentage, 1) }}%)
+                                    </p>
+                                @else
+                                    <p class="text-xs text-gray-400 mt-0.5">Belum ada perubahan</p>
+                                @endif
                             </div>
 
                             {{-- Status Ternak --}}
@@ -167,6 +230,143 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- AI Health Assessment --}}
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-600 to-purple-700 px-8 py-6">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2 rounded-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                        </path>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-white">🤖 AI Health Assessment</h2>
+                    <p class="text-purple-100 mt-1">Analisis kesehatan powered by Gemini AI</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {{-- Risk Score Gauge --}}
+                <div class="lg:col-span-1">
+                    <div
+                        class="bg-gray-50 rounded-xl p-6 border {{ $riskColor === 'red' ? 'border-red-200' : ($riskColor === 'orange' ? 'border-orange-200' : 'border-green-200') }} text-center">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Skor Risiko Kesehatan</h3>
+
+                        {{-- Circular Progress Gauge --}}
+                        <div class="relative w-40 h-40 mx-auto mb-4">
+                            <svg class="transform -rotate-90 w-40 h-40">
+                                {{-- Background Circle --}}
+                                <circle cx="80" cy="80" r="70" fill="none" stroke="#e5e7eb" stroke-width="12" />
+
+                                {{-- Progress Circle --}}
+                                <circle cx="80" cy="80" r="70" fill="none"
+                                    stroke="{{ $riskColor === 'red' ? '#ef4444' : ($riskColor === 'orange' ? '#f97316' : '#10b981') }}"
+                                    stroke-width="12" stroke-dasharray="{{ ($riskScore / 100) * 440 }} 440"
+                                    stroke-linecap="round" class="transition-all duration-1000 ease-out" />
+                            </svg>
+
+                            {{-- Score Text --}}
+                            <div class="absolute inset-0 flex items-center justify-center flex-col">
+                                <span
+                                    class=" text-4xl font-bold {{ $riskColor === 'red' ? 'text-red-600' : ($riskColor === 'orange' ? 'text-orange-600' : 'text-green-600') }}">
+                                    {{ $riskScore }}
+                                </span>
+                                <span class="text-xs text-gray-500 font-medium mt-1">dari 100</span>
+                            </div>
+                        </div>
+
+                        {{-- Risk Level Badge --}}
+                        <div class="mb-4">
+                            <span
+                                class="px-4 py-2 inline-flex text-sm leading-5 font-semibold rounded-full 
+                                                        {{ $riskColor === 'red' ? 'bg-red-100 text-red-800' : ($riskColor === 'orange' ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800') }}">
+                                @if($riskColor === 'red') 🔴
+                                @elseif($riskColor === 'orange') 🟠
+                                @else ✅
+                                @endif
+                                Risiko {{ $riskLevel }}
+                            </span>
+                        </div>
+
+                        {{-- Risk Info --}}
+                        <div class="text-xs text-gray-500 space-y-1">
+                            <p>Skor dihitung berdasarkan:</p>
+                            <p class="font-medium text-gray-600">Riwayat checkup, vaksinasi, penyakit, dan usia</p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Recommendations --}}
+                <div class="lg:col-span-2">
+                    <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                                </path>
+                            </svg>
+                            Rekomendasi AI
+                        </h3>
+
+                        <div class="space-y-3">
+                            @foreach($recommendations as $index => $recommendation)
+                                <div
+                                    class="flex items-start gap-3 bg-white rounded-lg p-4 border border-gray-200 hover:shadow-md transition">
+                                    <div class="flex-shrink-0 mt-0.5">
+                                        @if($riskScore >= 80 && $index < 2)
+                                            <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        @else
+                                            <svg class="w-5 h-5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd"
+                                                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                                    clip-rule="evenodd"></path>
+                                            </svg>
+                                        @endif
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm text-gray-700 leading-relaxed">{{ $recommendation }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        {{-- Action Button --}}
+                        @if($riskScore >= 60)
+                            <div class="mt-6 pt-4 border-t border-gray-200">
+                                <a href="{{ route('kesehatan.create', ['animal_id' => $animal->id]) }}"
+                                    class="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white px-6 py-3 rounded-lg transition font-medium shadow-sm">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                    </svg>
+                                    Tambah Pemeriksaan Kesehatan
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- AI Badge --}}
+                    <div class="mt-4 flex items-center justify-end gap-2 text-xs text-gray-500">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                                d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 9a1 1 0 112 0v4a1 1 0 11-2 0V9zm1-5a1 1 0 100 2 1 1 0 000-2z">
+                            </path>
+                        </svg>
+                        <span>Powered by Gemini AI • Updated {{ now()->diffForHumans() }}</span>
                     </div>
                 </div>
             </div>
@@ -286,7 +486,7 @@
                             <p class="text-gray-600 mb-1">Status:</p>
                             <span
                                 class="px-3 py-1 text-xs font-semibold rounded-full 
-                                                                                                    {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
+                                                                                                                                                                            {{ $animal->perkawinan->status_reproduksi === 'melahirkan' ? 'bg-green-100 text-green-800' :
                 ($animal->perkawinan->status_reproduksi === 'bunting' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
                                 {{ ucfirst($animal->perkawinan->status_reproduksi) }}
                             </span>
@@ -597,6 +797,7 @@
     {{-- Modals --}}
     @include('ternak.modals.edit')
     @include('ternak.modals.scan')
+    @include('ternak.modals.delete')
     </div>
 
     {{-- Chart.js for Weight Chart --}}
@@ -858,5 +1059,8 @@
                 label.textContent = currentCamera === 'environment' ? 'Kamera Belakang' : 'Kamera Depan';
             }
         }
+
+                                    }
     </script>
+    @include('ternak.modals.delete')
 @endsection

@@ -20,6 +20,7 @@ class Animal extends Model
         'tanggal_lahir',
         'jenis_kelamin',
         'berat_badan',
+        'berat_badan_awal',
         'status_ternak',
         'qr_url',
         'user_id',
@@ -29,6 +30,7 @@ class Animal extends Model
     protected $casts = [
         'tanggal_lahir' => 'date',
         'berat_badan' => 'decimal:2',
+        'berat_badan_awal' => 'decimal:2',
     ];
 
     /**
@@ -183,11 +185,27 @@ class Animal extends Model
     }
 
     /**
+     * Get all matings where this animal is the male parent (Alias)
+     */
+    public function reproduksisAsJantan(): HasMany
+    {
+        return $this->asJantan();
+    }
+
+    /**
      * Get all matings where this animal is the female parent
      */
     public function asBetina(): HasMany
     {
         return $this->hasMany(Perkawinan::class, 'betina_id');
+    }
+
+    /**
+     * Get all matings where this animal is the female parent (Alias)
+     */
+    public function reproduksisAsBetina(): HasMany
+    {
+        return $this->asBetina();
     }
 
     /**
@@ -219,7 +237,15 @@ class Animal extends Model
 
         // Check minimum age for breeding
         if ($this->tanggal_lahir) {
-            $ageInMonths = now()->diffInMonths($this->tanggal_lahir);
+            $birthDate = \Carbon\Carbon::parse($this->tanggal_lahir);
+            $now = now();
+
+            // If birth date is in the future, animal is not eligible
+            if ($birthDate->isFuture()) {
+                return false; // Invalid birth date
+            }
+
+            $ageInMonths = $birthDate->diffInMonths($now);
             $minAgeMonths = match ($this->jenis_hewan) {
                 'sapi' => 18,      // Sapi minimal 18 bulan
                 'kambing' => 12,   // Kambing minimal 12 bulan  
@@ -270,7 +296,43 @@ class Animal extends Model
     }
 
     /**
-     * Get breeding status message for this betina
+     * Check if this jantan is eligible for breeding (age-based only)
+     */
+    public function isJantanEligibleForBreeding(): bool
+    {
+        // Only jantan can be checked with this method
+        if ($this->jenis_kelamin !== 'jantan') {
+            return false;
+        }
+
+        // Check minimum age for breeding
+        if ($this->tanggal_lahir) {
+            $birthDate = \Carbon\Carbon::parse($this->tanggal_lahir);
+            $now = now();
+
+            // If birth date is in the future, animal is not eligible
+            if ($birthDate->isFuture()) {
+                return false; // Invalid birth date
+            }
+
+            $ageInMonths = $birthDate->diffInMonths($now);
+            $minAgeMonths = match ($this->jenis_hewan) {
+                'sapi' => 18,      // Sapi minimal 18 bulan
+                'kambing' => 12,   // Kambing minimal 12 bulan  
+                'domba' => 12,     // Domba minimal 12 bulan
+                default => 12,
+            };
+
+            if ($ageInMonths < $minAgeMonths) {
+                return false; // Too young to breed
+            }
+        }
+
+        return true; // Eligible based on age
+    }
+
+    /**
+     * Get breeding status message for display
      */
     public function getBreedingStatusMessage(): ?string
     {
@@ -280,7 +342,16 @@ class Animal extends Model
 
         // Check age first
         if ($this->tanggal_lahir) {
-            $ageInMonths = now()->diffInMonths($this->tanggal_lahir);
+            $birthDate = \Carbon\Carbon::parse($this->tanggal_lahir);
+            $now = now();
+
+            // If birth date is in the future, return error message
+            if ($birthDate->isFuture()) {
+                return "Tanggal lahir tidak valid (di masa depan)";
+            }
+
+            $ageInMonths = $birthDate->diffInMonths($now);
+            $ageInDays = $birthDate->diffInDays($now);
             $minAgeMonths = match ($this->jenis_hewan) {
                 'sapi' => 18,
                 'kambing' => 12,
@@ -289,20 +360,31 @@ class Animal extends Model
             };
 
             if ($ageInMonths < $minAgeMonths) {
-                return "Belum cukup umur (Umur: {$ageInMonths} bulan, Min: {$minAgeMonths} bulan)";
+                // Format age display based on how old the animal is
+                if ($ageInDays < 30) {
+                    $ageDisplay = floor($ageInDays) . " hari";
+                } elseif ($ageInMonths < 3) {
+                    $weeks = floor($ageInDays / 7);
+                    $ageDisplay = "{$weeks} minggu";
+                } else {
+                    $ageDisplay = "{$ageInMonths} bulan";
+                }
+                return "Belum cukup umur ({$ageDisplay}, Min: {$minAgeMonths} bulan)";
             }
         }
 
-        $latestPerkawinan = Perkawinan::where('betina_id', $this->id)
+        // Check latest perkawinan
+        $latestPerkawinan = \App\Models\Perkawinan::where('betina_id', $this->id)
             ->orderBy('tanggal_perkawinan', 'desc')
             ->first();
 
         if (!$latestPerkawinan) {
-            return 'Siap dikawinkan';
+            return null; // No message, eligible
         }
 
         if ($latestPerkawinan->status_reproduksi === 'bunting') {
-            $sisaHari = $latestPerkawinan->sisa_hari ?? 0;
+            $estimasi = \Carbon\Carbon::parse($latestPerkawinan->estimasi_kelahiran);
+            $sisaHari = now()->diffInDays($estimasi, false);
             return "Sedang bunting (sisa {$sisaHari} hari)";
         }
 
@@ -314,16 +396,63 @@ class Animal extends Model
                 default => 45,
             };
 
-            if ($latestPerkawinan->tanggal_melahirkan) {
-                $daysSinceBirth = now()->diffInDays($latestPerkawinan->tanggal_melahirkan);
-                $remainingDays = $recoveryDays - $daysSinceBirth;
+            if (!$latestPerkawinan->tanggal_melahirkan) {
+                return "Baru melahirkan (tanggal tidak tercatat)";
+            }
 
-                if ($remainingDays > 0) {
-                    return "Masa pemulihan ({$remainingDays} hari lagi)";
-                }
+            $daysSinceBirth = now()->diffInDays($latestPerkawinan->tanggal_melahirkan);
+
+            if ($daysSinceBirth < $recoveryDays) {
+                $sisaHari = $recoveryDays - $daysSinceBirth;
+                return "Masa pemulihan (sisa {$sisaHari} hari)";
             }
         }
 
-        return 'Siap dikawinkan';
+        return null; // Eligible
+    }
+
+    /**
+     * Get breeding status message for jantan
+     */
+    public function getJantanBreedingStatusMessage(): ?string
+    {
+        if ($this->jenis_kelamin !== 'jantan') {
+            return null;
+        }
+
+        // Check age
+        if ($this->tanggal_lahir) {
+            $birthDate = \Carbon\Carbon::parse($this->tanggal_lahir);
+            $now = now();
+
+            // If birth date is in the future, return error message
+            if ($birthDate->isFuture()) {
+                return "Tanggal lahir tidak valid";
+            }
+
+            $ageInMonths = $birthDate->diffInMonths($now);
+            $ageInDays = $birthDate->diffInDays($now);
+            $minAgeMonths = match ($this->jenis_hewan) {
+                'sapi' => 18,
+                'kambing' => 12,
+                'domba' => 12,
+                default => 12,
+            };
+
+            if ($ageInMonths < $minAgeMonths) {
+                // Format age display based on how old the animal is
+                if ($ageInDays < 30) {
+                    $ageDisplay = floor($ageInDays) . " hari";
+                } elseif ($ageInMonths < 3) {
+                    $weeks = floor($ageInDays / 7);
+                    $ageDisplay = "{$weeks} minggu";
+                } else {
+                    $ageDisplay = "{$ageInMonths} bulan";
+                }
+                return "Belum cukup umur ({$ageDisplay}, Min: {$minAgeMonths} bulan)";
+            }
+        }
+
+        return null; // Eligible
     }
 }

@@ -5,14 +5,82 @@
 
 @section('content')
     <div class="flex flex-col gap-6" x-data="{ 
-                        showViewModal: false, 
-                        showDeleteModal: false, 
-                        currentRecord: null
-                    }">
+                                                    showViewModal: false, 
+                                                    showDeleteModal: false, 
+                                                    currentRecord: null
+                                                }">
         {{-- Success/Error Messages --}}
         @if(session('success'))
-            <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg">
-                <p class="text-emerald-700 font-medium">{{ session('success') }}</p>
+            <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg shadow-md animate-slide-in-down"
+                x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-emerald-500 rounded-full p-2">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </div>
+                        <p class="text-emerald-700 font-medium">{{ session('success') }}</p>
+                    </div>
+                    <button @click="show = false" class="text-emerald-500 hover:text-emerald-700 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            @if(session('toast'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top-end',
+                            showConfirmButton: false,
+                            timer: 4000,
+                            timerProgressBar: true,
+                            didOpen: (toast) => {
+                                toast.addEventListener('mouseenter', Swal.stopTimer)
+                                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                            },
+                            customClass: {
+                                popup: 'colored-toast'
+                            }
+                        });
+
+                        Toast.fire({
+                            icon: 'success',
+                            title: '{{ session('success') }}',
+                            background: '#10b981',
+                            color: '#fff',
+                            iconColor: '#fff'
+                        });
+                    });
+                </script>
+            @endif
+        @endif
+
+        @if(session('error'))
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-md animate-slide-in-down"
+                x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 5000)">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-500 rounded-full p-2">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                                </path>
+                            </svg>
+                        </div>
+                        <p class="text-red-700 font-medium">{{ session('error') }}</p>
+                    </div>
+                    <button @click="show = false" class="text-red-500 hover:text-red-700 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
             </div>
         @endif
 
@@ -86,7 +154,9 @@
 
         {{-- Header & Actions --}}
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 class="text-2xl font-semibold text-gray-800">Riwayat Pemeriksaan Kesehatan</h2>
+            <h2 class="text-2xl font-semibold text-gray-800">
+                Riwayat Pemeriksaan Kesehatan
+            </h2>
 
             <a href="{{ route('kesehatan.create') }}"
                 class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
@@ -99,6 +169,11 @@
 
         {{-- Filters --}}
         <form method="GET" action="{{ route('kesehatan.index') }}"
+            x-transition:enter-start="opacity-0 transform -translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-2"
             class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-start">
             <div class="relative w-full md:w-96">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -149,8 +224,13 @@
             </div>
         </form>
 
-        {{-- Table --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {{-- Health Records Table --}}
+        <div class="bg-white rounded-xl shadow-md overflow-hidden"
+            x-transition:enter-start="opacity-0 transform -translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-150"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-2">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">

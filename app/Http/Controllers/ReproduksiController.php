@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Perkawinan;
 use App\Models\Animal;
 use App\Models\Notifikasi;
+use App\Models\CalendarEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -81,23 +82,23 @@ class ReproduksiController extends Controller
     {
         $user = Auth::user();
 
-        // Get all active animals for this user, grouped by gender
+        // Get only eligible jantan
         $jantanList = Animal::where('user_id', $user->id)
             ->where('jenis_kelamin', 'jantan')
             ->orderBy('nama_hewan')
-            ->get(['id', 'kode_hewan', 'nama_hewan', 'jenis_hewan']);
+            ->get()
+            ->filter(function ($jantan) {
+                return $jantan->isJantanEligibleForBreeding();
+            });
 
-        // Get ALL betinas (don't filter by eligibility - show all with status)
+        // Get only eligible betinas
         $betinaList = Animal::where('user_id', $user->id)
             ->where('jenis_kelamin', 'betina')
             ->orderBy('nama_hewan')
-            ->get(['id', 'kode_hewan', 'nama_hewan', 'jenis_hewan']);
-
-        // Add eligibility status to each betina
-        $betinaList->each(function ($betina) {
-            $betina->is_eligible = $betina->isEligibleForBreeding();
-            $betina->status_message = $betina->getBreedingStatusMessage();
-        });
+            ->get()
+            ->filter(function ($betina) {
+                return $betina->isEligibleForBreeding();
+            });
 
         return view('reproduksi.create', compact('jantanList', 'betinaList'));
     }
@@ -218,13 +219,32 @@ class ReproduksiController extends Controller
                 $data['straw_count'] = $validated['straw_count'] ?? null;
             }
 
+            // Prevent duplicate submissions (check for identical record within last 5 seconds)
+            $recentDuplicate = Perkawinan::where('betina_id', $validated['betina_id'])
+                ->where('tanggal_perkawinan', $validated['tanggal_perkawinan'])
+                ->where('metode_perkawinan', $validated['metode_perkawinan'])
+                ->where('created_at', '>=', now()->subSeconds(5))
+                ->first();
+
+            if ($recentDuplicate) {
+                // Duplicate detected - redirect with success message (silent deduplication)
+                return redirect()
+                    ->route('reproduksi.index')
+                    ->with('success', 'Data perkawinan berhasil ditambahkan!');
+            }
+
             // Generate unique kode_perkawinan
             // Format: P-YYYYMM-USERID-SEQUENCE (e.g., P-202512-2-001)
             $yearMonth = date('Ym');
             $userId = $user->id;
             $prefix = "P-{$yearMonth}-{$userId}";
 
-            $lastPerkawinan = Perkawinan::where('user_id', $userId)
+            // Find last perkawinan with same prefix (filter by betina owned by user)
+            $betinaIds = Animal::where('user_id', $userId)
+                ->where('jenis_kelamin', 'betina')
+                ->pluck('id');
+
+            $lastPerkawinan = Perkawinan::whereIn('betina_id', $betinaIds)
                 ->where('kode_perkawinan', 'like', "{$prefix}-%")
                 ->orderByRaw('CAST(SUBSTRING_INDEX(kode_perkawinan, "-", -1) AS UNSIGNED) DESC')
                 ->first();
@@ -240,8 +260,9 @@ class ReproduksiController extends Controller
             // Create perkawinan record
             $perkawinan = Perkawinan::create(array_merge(['kode_perkawinan' => $kodePerkawinan], $data));
 
-            // Create notification reminder
+            // Create notification reminder for heat detection
             Notifikasi::create([
+                'user_id' => $user->id,  // Add user_id
                 'perkawinan_id' => $perkawinan->id,
                 'animal_id' => $betina->id,
                 'jenis_notifikasi' => 'reproduksi',
@@ -250,10 +271,51 @@ class ReproduksiController extends Controller
                 'status' => 'pending',
             ]);
 
+            // Create notification reminder for birth (7 days before estimated birth)
+            $birthReminderDate = $estimasiKelahiran->copy()->subDays(7);
+            Notifikasi::create([
+                'user_id' => $user->id,
+                'perkawinan_id' => $perkawinan->id,
+                'animal_id' => $betina->id,
+                'jenis_notifikasi' => 'reproduksi',
+                'pesan' => "Persiapan kelahiran: {$betina->kode_hewan} - {$betina->nama_hewan} diperkirakan akan melahirkan pada {$estimasiKelahiran->format('d M Y')}",
+                'tanggal_kirim' => $birthReminderDate,
+                'status' => 'pending',
+            ]);
+
+            // Auto-create calendar events for breeding timeline
+            // Note: Birth estimate event will be created when status changes to 'bunting'
+
+            // 1. Pregnancy Checkup Event (60 days after breeding)
+            $checkupDate = $tanggalPerkawinan->copy()->addDays(60);
+            CalendarEvent::create([
+                'user_id' => $user->id,
+                'animal_id' => $betina->id,
+                'event_type' => CalendarEvent::TYPE_HEALTH_CHECKUP,
+                'title' => "Checkup Kehamilan - {$betina->nama_hewan}",
+                'description' => "Pemeriksaan kehamilan untuk {$betina->kode_hewan} ({$betina->nama_hewan}). Pastikan kondisi bunting dan kesehatan induk.",
+                'event_date' => $checkupDate,
+                'completed' => false,
+                'reminder_sent' => false,
+            ]);
+
+            // 2. Repeat Breeding Reminder (if breeding fails)
+            // This is the next expected heat cycle
+            CalendarEvent::create([
+                'user_id' => $user->id,
+                'animal_id' => $betina->id,
+                'event_type' => CalendarEvent::TYPE_HEAT_DETECTION,
+                'title' => "Reminder Birahi Berikutnya - {$betina->nama_hewan}",
+                'description' => "Waktu perkiraan birahi berikutnya untuk {$betina->kode_hewan} ({$betina->nama_hewan}). Jika perkawinan sebelumnya gagal, siapkan untuk kawin ulang.",
+                'event_date' => $reminderBirahi,
+                'completed' => false,
+                'reminder_sent' => false,
+            ]);
+
             DB::commit();
 
             return redirect()->route('reproduksi.index')
-                ->with('success', 'Catatan reproduksi berhasil ditambahkan!');
+                ->with('success', 'Catatan reproduksi berhasil ditambahkan! Event checkup dan reminder birahi telah ditambahkan ke kalender.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -321,9 +383,34 @@ class ReproduksiController extends Controller
 
         DB::beginTransaction();
         try {
+            $oldStatus = $perkawinan->status_reproduksi;
+
             // Update basic fields
             $perkawinan->status_reproduksi = $validated['status_reproduksi'];
             $perkawinan->catatan = $validated['catatan'] ?? $perkawinan->catatan;
+
+            // If status changed to 'bunting', create birth estimate event
+            if ($oldStatus !== 'bunting' && $validated['status_reproduksi'] === 'bunting') {
+                CalendarEvent::create([
+                    'user_id' => $user->id,
+                    'animal_id' => $perkawinan->betina_id,
+                    'event_type' => CalendarEvent::TYPE_BIRTH_ESTIMATE,
+                    'title' => "Estimasi Kelahiran - {$perkawinan->betina->nama_hewan}",
+                    'description' => "Ternak {$perkawinan->betina->kode_hewan} ({$perkawinan->betina->nama_hewan}) diperkirakan akan melahirkan. Persiapkan kandang kelahiran dan monitoring intensif.",
+                    'event_date' => $perkawinan->estimasi_kelahiran,
+                    'completed' => false,
+                    'reminder_sent' => false,
+                ]);
+            }
+
+            // If status changed to 'gagal', mark checkup and repeat breeding events as complete
+            if ($validated['status_reproduksi'] === 'gagal') {
+                CalendarEvent::where('animal_id', $perkawinan->betina_id)
+                    ->whereIn('event_type', [CalendarEvent::TYPE_HEALTH_CHECKUP, CalendarEvent::TYPE_HEAT_DETECTION])
+                    ->where('event_date', '>=', Carbon::parse($perkawinan->tanggal_perkawinan))
+                    ->where('event_date', '<=', Carbon::parse($perkawinan->estimasi_kelahiran)->addDays(7))
+                    ->update(['completed' => true]);
+            }
 
             // If status is melahirkan or gagal, mark reminder as selesai
             if (in_array($validated['status_reproduksi'], ['melahirkan', 'gagal'])) {
@@ -334,10 +421,17 @@ class ReproduksiController extends Controller
                     ->update(['status' => 'dibaca']);
             }
 
-            // If status is melahirkan, save birth details
+            // If status is melahirkan, save birth details and mark birth event as complete
             if ($validated['status_reproduksi'] === 'melahirkan') {
                 $perkawinan->tanggal_melahirkan = $validated['tanggal_melahirkan'];
                 $perkawinan->jumlah_anak = $validated['jumlah_anak'] ?? 0;
+
+                // Mark birth estimate event as complete
+                CalendarEvent::where('animal_id', $perkawinan->betina_id)
+                    ->where('event_type', CalendarEvent::TYPE_BIRTH_ESTIMATE)
+                    ->where('event_date', '>=', Carbon::parse($perkawinan->tanggal_perkawinan))
+                    ->where('event_date', '<=', Carbon::parse($perkawinan->estimasi_kelahiran)->addDays(7))
+                    ->update(['completed' => true]);
             }
 
             $perkawinan->save();
@@ -367,15 +461,28 @@ class ReproduksiController extends Controller
             abort(403, 'Unauthorized');
         }
 
+        // Prevent deletion if offspring exist
+        if ($perkawinan->offspring->count() > 0) {
+            return back()->withErrors([
+                'error' => 'Tidak dapat menghapus catatan perkawinan yang sudah memiliki anak. Hapus anak terlebih dahulu atau biarkan catatan ini tetap ada untuk menjaga jejak silsilah.'
+            ]);
+        }
+
         DB::beginTransaction();
         try {
-            // Orphan any offspring (set perkawinan_id to null)
-            if ($perkawinan->offspring->count() > 0) {
-                Animal::where('perkawinan_id', $id)->update(['perkawinan_id' => null]);
-            }
-
             // Delete related notifications
             Notifikasi::where('perkawinan_id', $id)->delete();
+
+            // Delete related calendar events (birth, checkup, and repeat breeding reminder)
+            CalendarEvent::where('animal_id', $perkawinan->betina_id)
+                ->whereIn('event_type', [
+                    CalendarEvent::TYPE_BIRTH_ESTIMATE,
+                    CalendarEvent::TYPE_HEALTH_CHECKUP,
+                    CalendarEvent::TYPE_HEAT_DETECTION // Include repeat breeding reminders
+                ])
+                ->where('event_date', '>=', Carbon::parse($perkawinan->tanggal_perkawinan))
+                ->where('event_date', '<=', Carbon::parse($perkawinan->estimasi_kelahiran)->addDays(7))
+                ->delete();
 
             // Delete the perkawinan record
             $perkawinan->delete();
@@ -383,7 +490,7 @@ class ReproduksiController extends Controller
             DB::commit();
 
             return redirect()->route('reproduksi.index')
-                ->with('success', 'Catatan reproduksi berhasil dihapus!');
+                ->with('success', 'Catatan reproduksi dan event terkait berhasil dihapus!');
 
         } catch (\Exception $e) {
             DB::rollBack();

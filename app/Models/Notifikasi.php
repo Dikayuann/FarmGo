@@ -80,4 +80,12 @@ class Notifikasi extends Model
     {
         return $query->where('jenis_notifikasi', 'kesehatan_darurat');
     }
+
+    /**
+     * Scope for health checkup reminder notifications
+     */
+    public function scopeHealthCheckupReminder($query)
+    {
+        return $query->where('jenis_notifikasi', 'pemeriksaan_berikutnya');
+    }
 }

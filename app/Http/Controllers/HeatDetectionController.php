@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\HeatDetection;
 use App\Models\Animal;
+use App\Models\CalendarEvent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
@@ -76,6 +77,24 @@ class HeatDetectionController extends Controller
             ]);
         }
 
+        // Prevent duplicate submissions (check for identical record within last 5 seconds)
+        $recentDuplicate = HeatDetection::where('animal_id', $validated['animal_id'])
+            ->where('tanggal_deteksi', $validated['tanggal_deteksi'])
+            ->where('created_at', '>=', now()->subSeconds(5))
+            ->first();
+
+        if ($recentDuplicate) {
+            // Duplicate detected - redirect based on action
+            if ($validated['action'] === 'breed_now') {
+                return redirect()->route('reproduksi.create', [
+                    'betina_id' => $animal->id,
+                    'tanggal_birahi' => $validated['tanggal_deteksi']
+                ])->with('success', 'Deteksi birahi berhasil dicatat!');
+            }
+            return redirect()->route('heat-detection.index')
+                ->with('success', 'Deteksi birahi berhasil dicatat!');
+        }
+
         // Create heat detection record
         $heatDetection = HeatDetection::create([
             'animal_id' => $validated['animal_id'],
@@ -83,6 +102,21 @@ class HeatDetectionController extends Controller
             'gejala' => $validated['gejala'] ?? [],
             'catatan' => $validated['catatan'] ?? null,
             'status' => 'pending',
+        ]);
+
+        // Auto-create calendar event for optimal breeding time
+        // Optimal time is 12-24 hours after heat detection, we'll use 18 hours as middle point
+        $optimalBreedingTime = Carbon::parse($validated['tanggal_deteksi'])->addHours(18);
+
+        CalendarEvent::create([
+            'user_id' => $user->id,
+            'animal_id' => $animal->id,
+            'event_type' => CalendarEvent::TYPE_HEAT_DETECTION,
+            'title' => "Waktu Kawin Optimal - {$animal->nama_hewan}",
+            'description' => "Ternak {$animal->kode_hewan} ({$animal->nama_hewan}) sedang birahi. Waktu optimal untuk kawin adalah 12-24 jam setelah deteksi birahi.",
+            'event_date' => $optimalBreedingTime,
+            'completed' => false,
+            'reminder_sent' => false,
         ]);
 
         // Handle action
@@ -96,7 +130,7 @@ class HeatDetectionController extends Controller
         }
 
         return redirect()->route('reproduksi.index')
-            ->with('success', 'Catatan birahi berhasil disimpan!');
+            ->with('success', 'Catatan birahi berhasil disimpan! Event "Waktu Kawin Optimal" telah ditambahkan ke kalender.');
     }
 
     /**
@@ -131,9 +165,16 @@ class HeatDetectionController extends Controller
             return back()->withErrors(['error' => 'Catatan birahi yang sudah dikawinkan tidak dapat dihapus.']);
         }
 
+        // Delete related calendar events
+        CalendarEvent::where('animal_id', $heatDetection->animal_id)
+            ->where('event_type', CalendarEvent::TYPE_HEAT_DETECTION)
+            ->where('event_date', '>=', Carbon::parse($heatDetection->tanggal_deteksi))
+            ->where('event_date', '<=', Carbon::parse($heatDetection->tanggal_deteksi)->addDays(2))
+            ->delete();
+
         $heatDetection->delete();
 
         return redirect()->route('reproduksi.index')
-            ->with('success', 'Catatan birahi berhasil dihapus!');
+            ->with('success', 'Catatan birahi dan event terkait berhasil dihapus!');
     }
 }

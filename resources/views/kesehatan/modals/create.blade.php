@@ -47,7 +47,7 @@
                         </h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {{-- Animal Select - Searchable --}}
-                            <div class="md:col-span-2" x-data="{
+                            <div class="md:col-span-2 relative" x-data="{
                                 open: false,
                                 search: '',
                                 selected: null,
@@ -69,14 +69,15 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">
                                     Hewan <span class="text-red-500">*</span>
                                 </label>
-                                
+
                                 {{-- Hidden input for form submission --}}
                                 <input type="hidden" name="animal_id" :value="selected?.id" required>
-                                
+
                                 {{-- Custom Select Button --}}
                                 <button type="button" @click="open = !open"
                                     class="relative w-full bg-white border border-gray-300 rounded-lg shadow-sm pl-3 pr-10 py-2 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
-                                    <span class="block truncate" x-text="selected ? `${selected.kode} - ${selected.nama} (${selected.jenis})` : 'Pilih atau cari hewan...'"></span>
+                                    <span class="block truncate"
+                                        x-text="selected ? `${selected.kode} - ${selected.nama} (${selected.jenis})` : 'Pilih atau cari hewan...'"></span>
                                     <span class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
                                         <i class="fa-solid fa-chevron-down text-gray-400"></i>
                                     </span>
@@ -85,7 +86,7 @@
                                 {{-- Dropdown --}}
                                 <div x-show="open" x-transition
                                     class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                                    
+
                                     {{-- Search Input --}}
                                     <div class="sticky top-0 bg-white px-2 py-2 border-b">
                                         <input type="text" x-model="search" @click.stop
@@ -98,8 +99,9 @@
                                         <div @click="selectAnimal(animal)"
                                             class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-emerald-50 transition"
                                             :class="selected?.id === animal.id ? 'bg-emerald-100' : ''">
-                                            <span class="block truncate" :class="selected?.id === animal.id ? 'font-semibold' : 'font-normal'">
-                                                <span x-text="animal.kode"></span> - 
+                                            <span class="block truncate"
+                                                :class="selected?.id === animal.id ? 'font-semibold' : 'font-normal'">
+                                                <span x-text="animal.kode"></span> -
                                                 <span x-text="animal.nama"></span>
                                                 (<span x-text="animal.jenis"></span>)
                                             </span>
@@ -155,8 +157,8 @@
                                 <label for="berat_badan" class="block text-sm font-medium text-gray-700 mb-1">
                                     Berat Badan (kg) <span class="text-red-500">*</span>
                                 </label>
-                                <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="0" required
-                                    placeholder="Contoh: 350.5"
+                                <input type="number" id="berat_badan" name="berat_badan" step="0.01" min="10" max="3000"
+                                    maxlength="7" required placeholder="Contoh: 350.5"
                                     class="mt-1 block w-full border-gray-300 rounded-lg shadow-sm focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm">
                                 @error('berat_badan')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

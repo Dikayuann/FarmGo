@@ -15,6 +15,16 @@ Route::get('/', function () {
     return view('landing.index');
 });
 
+// Contact Form Route (with rate limiting: 5 submissions per 10 minutes)
+Route::post('/contact', [App\Http\Controllers\ContactController::class, 'store'])
+    ->middleware('throttle:5,10')
+    ->name('contact.store');
+
+// Newsletter Subscription Route (with rate limiting: 3 subscriptions per 10 minutes)
+Route::post('/newsletter/subscribe', [App\Http\Controllers\NewsletterController::class, 'subscribe'])
+    ->middleware('throttle:3,10')
+    ->name('newsletter.subscribe');
+
 Route::middleware(['auth'])->group(function () {
     // Langganan Routes (no subscription required - users need access to subscribe)
     Route::get('/langganan', [App\Http\Controllers\LanggananController::class, 'index'])->name('langganan');
@@ -40,17 +50,26 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/set-password', [App\Http\Controllers\SettingsController::class, 'setPassword'])->name('settings.set-password');
     Route::post('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'updateAvatar'])->name('settings.update-avatar');
     Route::delete('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'deleteAvatar'])->name('settings.delete-avatar');
+
 });
 
 // Protected routes - require active subscription
 Route::middleware(['auth', 'require.subscription'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // Calendar Event Routes
+    Route::get('/api/calendar-data', [DashboardController::class, 'getCalendarData'])->name('calendar.data');
+    Route::post('/api/calendar-events/{id}/complete', [DashboardController::class, 'markEventComplete'])->name('calendar.mark-complete');
+
     // Ternak Resource Routes
     Route::resource('ternak', TernakController::class);
 
-    // Kesehatan Resource Routes
+    // Kesehatan (Health Records)
+    Route::get('/animals/{id}/weight-history', [KesehatanController::class, 'getWeightHistory'])->name('animals.weight-history');
     Route::resource('kesehatan', KesehatanController::class);
+
+    // Vaksinasi Resource Routes
+    Route::resource('vaksinasi', App\Http\Controllers\VaksinasiController::class);
 
     // Reproduksi Resource Routes
     Route::resource('reproduksi', App\Http\Controllers\ReproduksiController::class);
@@ -73,6 +92,26 @@ Route::middleware(['auth', 'require.subscription'])->group(function () {
     Route::post('/ekspor/comprehensive', [App\Http\Controllers\ExportController::class, 'exportComprehensive'])->name('ekspor.comprehensive');
 });
 
+// Settings Routes (accessible without subscription requirement)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings/profile', [App\Http\Controllers\SettingsController::class, 'updateProfile'])->name('settings.update-profile');
+    Route::post('/settings/password', [App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.update-password');
+    Route::post('/settings/set-password', [App\Http\Controllers\SettingsController::class, 'setPassword'])->name('settings.set-password');
+    Route::post('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'updateAvatar'])->name('settings.update-avatar');
+    Route::post('/settings/avatar/delete', [App\Http\Controllers\SettingsController::class, 'deleteAvatar'])->name('settings.delete-avatar');
+});
+
+// Subscription/Langganan Routes (accessible without require.subscription middleware)
+Route::get('/langganan', [App\Http\Controllers\LanggananController::class, 'index'])->middleware('auth')->name('langganan.index');
+Route::get('/langganan/checkout/{package}', [App\Http\Controllers\LanggananController::class, 'showCheckout'])->middleware('auth')->name('langganan.checkout');
+Route::post('/langganan/payment', [App\Http\Controllers\LanggananController::class, 'createPayment'])->middleware('auth')->name('langganan.payment');
+Route::get('/langganan/pending/{orderId}', [App\Http\Controllers\LanggananController::class, 'showPendingPayment'])->middleware('auth')->name('langganan.pending');
+Route::get('/langganan/payment-status/{orderId}', [App\Http\Controllers\LanggananController::class, 'checkPaymentStatus'])->middleware('auth')->name('langganan.payment-status');
+Route::post('/langganan/activate-trial', [App\Http\Controllers\LanggananController::class, 'activateTrial'])->middleware('auth')->name('langganan.activate-trial');
+Route::get('/langganan/history', [App\Http\Controllers\LanggananController::class, 'paymentHistory'])->middleware('auth')->name('langganan.history');
+Route::post('/langganan/cancel', [App\Http\Controllers\LanggananController::class, 'cancelSubscription'])->middleware('auth')->name('langganan.cancel');
+
 Route::get('/login', [LoginController::class, 'view']);
 Route::post('/login', [LoginController::class, 'login'])->name('login');
 
@@ -80,7 +119,29 @@ Route::post('/login', [LoginController::class, 'login'])->name('login');
 Route::get('/login/clear-lockout', [LoginController::class, 'clearLockout'])->name('login.clear');
 
 Route::get('/register', [RegisterController::class, 'view'])->name('register');
-Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
+Route::post('/register', [RegisterController::class, 'register'])
+    ->middleware('throttle:5,10')
+    ->name('register.submit');
+
+// Forgot Password Routes
+Route::get('/forgot-password', [App\Http\Controllers\ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [App\Http\Controllers\ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+
+// Reset Password Routes
+Route::get('/reset-password/{token}', [App\Http\Controllers\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [App\Http\Controllers\ResetPasswordController::class, 'reset'])->name('password.update');
+
+// Email Verification Routes
+Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'notice'])
+    ->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\EmailVerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
+Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])
+    ->middleware('throttle:3,5')
+    ->name('verification.resend');
 
 // API route for email validation with rate limiting
 Route::get('/api/check-email', function (Illuminate\Http\Request $request) {
@@ -120,7 +181,12 @@ Route::post('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/login')->with('success', 'Anda telah berhasil logout.');
+
+    return redirect('/login')
+        ->with('success', 'Anda telah berhasil logout.')
+        ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
 })->name('logout');
 
 // GET logout route (fallback for CSRF token expiry)
@@ -128,11 +194,21 @@ Route::get('/logout', function () {
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
-    return redirect('/login')->with('info', 'Sesi Anda telah berakhir. Silakan login kembali.');
+
+    return redirect('/login')
+        ->with('info', 'Sesi Anda telah berakhir. Silakan login kembali.')
+        ->header('Cache-Control', 'no-cache, no-store, max-age=0, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
 })->name('logout.get');
 
 // Midtrans callback (no auth required, called by Midtrans server)
 Route::post('/langganan/callback', [App\Http\Controllers\LanggananController::class, 'handleCallback'])->name('langganan.callback');
+
+// Redirect /admin/login to main login page (security measure)
+Route::get('/admin/login', function () {
+    return redirect('/login');
+});
 
 // Admin-only routes - Protected with admin middleware
 Route::middleware(['auth', 'admin'])->group(function () {

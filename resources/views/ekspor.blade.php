@@ -3,7 +3,7 @@
 @section('title', 'Ekspor Data - FarmGo')
 
 @section('content')
-    <div class="max-w-7xl mx-auto">
+    <div>
         <!-- Header -->
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-gray-900">Ekspor Data</h1>
@@ -38,7 +38,7 @@
                     Fitur ekspor data hanya tersedia untuk pengguna premium. Upgrade paket Anda sekarang untuk mengakses fitur
                     ini dan fitur premium lainnya.
                 </p>
-                <a href="{{ route('langganan') }}"
+                <a href="{{ route('langganan.index') }}"
                     class="inline-flex items-center gap-2 bg-emerald-600 text-white px-6 py-3 rounded-lg hover:bg-emerald-700 transition font-semibold">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">

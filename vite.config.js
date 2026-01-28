@@ -10,4 +10,16 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+    server: {
+        host: '127.0.0.1', // Use IPv4 instead of IPv6 to prevent connection issues
+        port: 5173,
+        strictPort: false,
+        hmr: {
+            host: '127.0.0.1',
+        },
+        cors: true, // Enable CORS for asset loading
+        watch: {
+            usePolling: true, // Better compatibility on Windows
+        },
+    },
 });
