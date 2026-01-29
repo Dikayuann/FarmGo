@@ -17,8 +17,8 @@ class StatsOverview extends BaseWidget
         $totalUsers = User::where('role', '!=', 'admin')->count();
         $activeUsers = User::where('role', '!=', 'admin')
             ->where(function ($query) {
-                $query->where('role', 'premium')
-                    ->orWhere('role', 'trial');
+                $query->where('role', 'peternak_premium')
+                    ->orWhere('role', 'peternak_trial');
             })
             ->count();
 
@@ -33,16 +33,16 @@ class StatsOverview extends BaseWidget
             ->where('tanggal_berakhir', '>=', now()->toDateString())
             ->count();
 
-        // Monthly Revenue
-        $monthlyRevenue = Transaction::where('status', 'settlement')
+        // Monthly Revenue - cast to float since gross_amount is stored as string
+        $monthlyRevenue = (float) Transaction::where('status', 'settlement')
             ->whereMonth('created_at', now()->month)
             ->whereYear('created_at', now()->year)
-            ->sum('amount');
+            ->sum('gross_amount');
 
-        $lastMonthRevenue = Transaction::where('status', 'settlement')
+        $lastMonthRevenue = (float) Transaction::where('status', 'settlement')
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereYear('created_at', now()->subMonth()->year)
-            ->sum('amount');
+            ->sum('gross_amount');
 
         $revenueChange = $lastMonthRevenue > 0
             ? (($monthlyRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100
