@@ -99,7 +99,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/settings/password', [App\Http\Controllers\SettingsController::class, 'updatePassword'])->name('settings.update-password');
     Route::post('/settings/set-password', [App\Http\Controllers\SettingsController::class, 'setPassword'])->name('settings.set-password');
     Route::post('/settings/avatar', [App\Http\Controllers\SettingsController::class, 'updateAvatar'])->name('settings.update-avatar');
-    Route::post('/settings/avatar/delete', [App\Http\Controllers\SettingsController::class, 'deleteAvatar'])->name('settings.delete-avatar');
 });
 
 // Subscription/Langganan Routes (accessible without require.subscription middleware)
