@@ -28,9 +28,9 @@ class StatsOverview extends BaseWidget
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // Active Subscriptions
-        $activeSubscriptions = Langganan::where('status', 'active')
-            ->where('end_date', '>=', now())
+        // Active Subscriptions - using correct column names
+        $activeSubscriptions = Langganan::where('status', 'aktif')
+            ->where('tanggal_berakhir', '>=', now()->toDateString())
             ->count();
 
         // Monthly Revenue
