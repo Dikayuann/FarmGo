@@ -130,17 +130,17 @@ Route::post('/forgot-password', [App\Http\Controllers\ForgotPasswordController::
 Route::get('/reset-password/{token}', [App\Http\Controllers\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
 Route::post('/reset-password', [App\Http\Controllers\ResetPasswordController::class, 'reset'])->name('password.update');
 
-// Email Verification Routes
-Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'notice'])
-    ->name('verification.notice');
+// Email Verification Routes - DISABLED TEMPORARILY
+// Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'notice'])
+//     ->name('verification.notice');
 
-Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\EmailVerificationController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
-    ->name('verification.verify');
+// Route::get('/email/verify/{id}/{hash}', [App\Http\Controllers\EmailVerificationController::class, 'verify'])
+//     ->middleware(['signed', 'throttle:6,1'])
+//     ->name('verification.verify');
 
-Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])
-    ->middleware('throttle:3,5')
-    ->name('verification.resend');
+// Route::post('/email/resend', [App\Http\Controllers\EmailVerificationController::class, 'resend'])
+//     ->middleware('throttle:3,5')
+//     ->name('verification.resend');
 
 // API route for email validation with rate limiting
 Route::get('/api/check-email', function (Illuminate\Http\Request $request) {
