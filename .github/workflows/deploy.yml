@@ -13,14 +13,9 @@ jobs:
 
     defaults:
       run:
-        working-directory: /var/www/farmgo
+        working-directory: /www/wwwroot/FarmGo
 
     steps:
-      - name: Repair deploy directory permissions
-        run: |
-          chown -R $USER:$USER storage bootstrap/cache public || true
-          chmod -R 775 storage bootstrap/cache
-
       - name: Sync code to origin/main
         run: |
           git fetch origin main
@@ -34,15 +29,19 @@ jobs:
           npm ci
           npm run build
 
+      - name: Ensure writable Laravel dirs
+        run: |
+          sudo chown -R www:www storage bootstrap/cache
+          sudo chmod -R 775 storage bootstrap/cache
+
       - name: Run migrations
         run: php artisan migrate --force
 
-      - name: Cache config, routes, views
+      - name: Cache Laravel
         run: |
           php artisan config:cache
           php artisan route:cache
           php artisan view:cache
-          php artisan event:cache
           php artisan optimize
 
       - name: Restart queue worker
