@@ -4,7 +4,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FarmGo Landing Page</title>
+
+    <!-- SEO Meta Tags -->
+    <title>FarmGo - Smart Farm Management System | Kelola Ternak dengan Mudah</title>
+    <meta name="description"
+        content="Kelola operasional ternak harian dengan sistem all-in-one. Kontrol mudah, visibilitas total – Kapan Saja, Di Mana Saja! Mulai Gratis Sekarang.">
+    <meta name="keywords"
+        content="farm management, manajemen ternak, sistem peternakan, farm software, livestock management, FarmGo">
+    <meta name="author" content="FarmGo">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url('/') }}">
+    <meta property="og:title" content="FarmGo - Smart Farm Management System">
+    <meta property="og:description"
+        content="Kelola operasional ternak harian dengan sistem all-in-one. Kontrol mudah, visibilitas total – Kapan Saja, Di Mana Saja!">
+    <meta property="og:image" content="{{ asset('image/FarmGo.png') }}">
+    <meta property="og:site_name" content="FarmGo">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ url('/') }}">
+    <meta name="twitter:title" content="FarmGo - Smart Farm Management System">
+    <meta name="twitter:description"
+        content="Kelola operasional ternak harian dengan sistem all-in-one. Kontrol mudah, visibilitas total – Kapan Saja, Di Mana Saja!">
+    <meta name="twitter:image" content="{{ asset('image/FarmGo.png') }}">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ asset('image/FarmGo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('image/FarmGo.png') }}">
 
     <!-- Preconnect for third-party resources -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -90,9 +118,13 @@
     <nav
         class="bg-white/80 backdrop-blur-lg p-4 px-6 md:px-12 flex justify-between items-center w-full fixed top-0 z-50 border-b border-lime-100/50 shadow-sm">
 
-        <div class="flex items-center gap-2">
-            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="max-w-12 max-h-12 drop-shadow-md"
-                width="48" height="48" fetchpriority="high">
+        <div class="flex items-center gap-3">
+            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="h-16 w-auto drop-shadow-md" width="64"
+                height="64" fetchpriority="high">
+            <div class="hidden md:flex flex-col">
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">FarmGo</h1>
+                <p class="text-xs text-slate-600">Smart Farm Management</p>
+            </div>
         </div>
 
         <div class="hidden md:flex space-x-8 text-slate-600 font-medium text-sm">
