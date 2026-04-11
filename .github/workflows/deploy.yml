@@ -40,7 +40,7 @@ jobs:
 
       - name: Ensure writable Laravel dirs
         run: |
-          sudo chgrp -R www storage bootstrap/cache
+          sudo chown -R ubuntu:ubuntu storage bootstrap/cache
           sudo chmod -R 775 storage bootstrap/cache
 
       - name: Laravel health check
