@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'prevent.back' => \App\Http\Middleware\PreventBackHistory::class,
         ]);
 
+        // Apply security headers to ALL web requests
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
         // Apply prevent back history to auth group
         $middleware->appendToGroup('auth', [
             \App\Http\Middleware\PreventBackHistory::class,

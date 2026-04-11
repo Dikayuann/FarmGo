@@ -99,15 +99,20 @@ class KesehatanController extends Controller
         $currentWeight = null;
 
         if ($animalId) {
-            $animal = Animal::find($animalId);
+            // SECURITY: Only allow access to user's own animals
+            $animal = Animal::where('id', $animalId)
+                ->where('user_id', Auth::id())
+                ->first();
             $currentWeight = $animal?->berat_badan;
 
-            // Get last 5 weight records
-            $weightHistory = HealthRecord::where('animal_id', $animalId)
-                ->whereNotNull('berat_badan')
-                ->orderBy('tanggal_pemeriksaan', 'desc')
-                ->limit(5)
-                ->get(['berat_badan', 'tanggal_pemeriksaan']);
+            // Get last 5 weight records (only if animal belongs to user)
+            if ($animal) {
+                $weightHistory = HealthRecord::where('animal_id', $animalId)
+                    ->whereNotNull('berat_badan')
+                    ->orderBy('tanggal_pemeriksaan', 'desc')
+                    ->limit(5)
+                    ->get(['berat_badan', 'tanggal_pemeriksaan']);
+            }
         }
 
         return view('kesehatan.create', compact('animals', 'animalId', 'currentWeight', 'weightHistory'));

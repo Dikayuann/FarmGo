@@ -119,12 +119,8 @@
         class="bg-white/80 backdrop-blur-lg p-4 px-6 md:px-12 flex justify-between items-center w-full fixed top-0 z-50 border-b border-lime-100/50 shadow-sm">
 
         <div class="flex items-center gap-3">
-            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="h-16 w-auto drop-shadow-md" width="64"
+            <img src="{{ asset('image/FarmGo.png') }}" alt="FarmGo Logo" class="h-10 w-auto drop-shadow-md" width="64"
                 height="64" fetchpriority="high">
-            <div class="hidden md:flex flex-col">
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">FarmGo</h1>
-                <p class="text-xs text-slate-600">Smart Farm Management</p>
-            </div>
         </div>
 
         <div class="hidden md:flex space-x-8 text-slate-600 font-medium text-sm">

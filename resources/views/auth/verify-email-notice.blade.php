@@ -214,7 +214,7 @@
 
         <!-- Help Text -->
         <p class="text-center text-sm text-gray-700 mt-6">
-            Butuh bantuan? <a href="mailto:support@farmgo.com"
+            Butuh bantuan? <a href="mailto:dev@zerollz.biz.id"
                 class="text-emerald-600 hover:text-emerald-700 font-semibold">Hubungi Support</a>
         </p>
     </div>

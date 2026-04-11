@@ -12,6 +12,44 @@ use RyanChandler\LaravelCloudflareTurnstile\Rules\Turnstile;
 
 class LoginController extends Controller
 {
+    /**
+     * Maximum login attempts before lockout
+     */
+    protected int $maxAttempts = 3;
+
+    /**
+     * Lockout duration in seconds (5 minutes)
+     */
+    protected int $decaySeconds = 300;
+
+    /**
+     * Get the rate limiter key for the given request
+     * Uses email + IP so different IPs can't bypass each other
+     */
+    protected function throttleKey(Request $request): string
+    {
+        return 'login-attempt:' . Str::transliterate(
+            Str::lower($request->input('email', '')) . '|' . $request->ip()
+        );
+    }
+
+    /**
+     * Format remaining lockout time as human-readable string
+     */
+    protected function formatLockoutTime(int $seconds): string
+    {
+        $minutes = floor($seconds / 60);
+        $secs = $seconds % 60;
+
+        if ($minutes > 0 && $secs > 0) {
+            return "{$minutes} menit {$secs} detik";
+        } elseif ($minutes > 0) {
+            return "{$minutes} menit";
+        } else {
+            return "{$secs} detik";
+        }
+    }
+
     public function view()
     {
         // If user is already authenticated, redirect to appropriate page
@@ -30,46 +68,29 @@ class LoginController extends Controller
             return redirect()->route('dashboard');
         }
 
-        // Cek apakah akun sedang terkunci
-        if (session('login_locked_until')) {
-            $lockedUntil = session('login_locked_until');
-            if (now()->lt($lockedUntil)) {
-                $remainingMinutes = now()->diffInMinutes($lockedUntil) + 1;
-                return redirect()->back()->withErrors([
-                    'email' => "Akun Anda terkunci. Silakan coba lagi dalam {$remainingMinutes} menit."
-                ]);
-            } else {
-                // Reset jika waktu lockout sudah habis
-                session()->forget(['login_attempts', 'login_locked_until']);
-            }
-        }
-
         return view('login');
-    }
-
-    /**
-     * Clear login lockout (for development/testing purposes)
-     */
-    public function clearLockout()
-    {
-        session()->forget(['login_attempts', 'login_locked_until']);
-        return redirect('/login')->with('success', 'Login attempts telah direset. Silakan coba login kembali.');
     }
 
     public function login(Request $request)
     {
-        // Cek lockout terlebih dahulu
-        if (session('login_locked_until')) {
-            $lockedUntil = session('login_locked_until');
-            if (now()->lt($lockedUntil)) {
-                $remainingMinutes = now()->diffInMinutes($lockedUntil) + 1;
-                return back()->withErrors([
-                    'email' => "Terlalu banyak percobaan login gagal. Akun Anda terkunci selama {$remainingMinutes} menit."
-                ])->withInput($request->only('email'));
-            } else {
-                // Reset jika waktu lockout sudah habis
-                session()->forget(['login_attempts', 'login_locked_until']);
+        // Check if rate limited (too many failed attempts)
+        $key = $this->throttleKey($request);
+
+        if (RateLimiter::tooManyAttempts($key, $this->maxAttempts)) {
+            $seconds = RateLimiter::availableIn($key);
+            $timeRemaining = $this->formatLockoutTime($seconds);
+
+            // Record lockout attempt in history
+            $user = User::where('email', $request->email)->first();
+            if ($user) {
+                $this->recordLoginHistory($user, $request, 'locked');
             }
+
+            return back()->withErrors([
+                'email' => 'Akun terkunci karena terlalu banyak percobaan login gagal.',
+                'info' => "Silakan tunggu {$timeRemaining} lagi untuk mencoba kembali.",
+            ])->withInput($request->only('email'))
+              ->with('lockout_seconds', $seconds);
         }
 
         // Validasi input
@@ -96,7 +117,7 @@ class LoginController extends Controller
         $user = User::where('email', $request->email)->first();
 
         if (!$user) {
-            // Email tidak terdaftar - langsung beri tahu tanpa rate limiting
+            // Email tidak terdaftar — don't count as failed attempt to avoid enumeration
             return back()->withErrors([
                 'email' => 'Email tidak terdaftar. Silakan daftar terlebih dahulu.'
             ])->withInput($request->only('email'));
@@ -113,14 +134,14 @@ class LoginController extends Controller
         // Cek apakah user terdaftar via Google (password = null)
         if ($user->google_id && !$user->password) {
             return back()->withErrors([
-                'email' => 'Akun ini terdaftar dengan Google. Silakan login menggunakan tombol Google.'
+                'email' => 'Akun ini terdaftar dengan Google. Silakan login menggunakan tombol "Masuk dengan Google".'
             ])->withInput($request->only('email'));
         }
 
         // Attempt login dengan email dan password
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password])) {
-            // Reset login attempts on successful login
-            session()->forget(['login_attempts', 'login_locked_until']);
+            // Clear rate limiter on successful login
+            RateLimiter::clear($key);
 
             // Regenerate session untuk security
             $request->session()->regenerate();
@@ -132,13 +153,11 @@ class LoginController extends Controller
             $this->recordLoginHistory($user, $request, 'success');
 
             if ($user->isAdmin()) {
-                // Admin redirect ke admin panel
                 return redirect('/admin');
             }
 
             // Check if email is verified (skip for Google users)
             if (!$user->google_id && !$user->hasVerifiedEmail()) {
-                // CRITICAL: Logout user to prevent bypass
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -149,29 +168,38 @@ class LoginController extends Controller
 
             // Check if user has active subscription
             if (!$user->hasActivePremium() && !$user->isOnTrial()) {
-                // Redirect to subscription page if no active subscription
-                return redirect()->route('langganan.index')->with('info', 'Silakan pilih paket langganan untuk mulai menggunakan FarmGo.');
+                return redirect()->route('langganan.index')
+                    ->with('info', 'Silakan pilih paket langganan untuk mulai menggunakan FarmGo.');
             }
 
-            // Peternak (premium/trial) redirect ke dashboard
             return redirect()->intended(route('dashboard'));
         }
 
-        // Password salah - track failed login attempts
-        $attempts = session('login_attempts', 0) + 1;
-        session(['login_attempts' => $attempts]);
+        // Password salah — increment rate limiter
+        RateLimiter::hit($key, $this->decaySeconds);
 
-        // Lock account after 3 failed attempts
-        if ($attempts >= 3) {
-            session(['login_locked_until' => now()->addMinutes(5)]);
+        $currentAttempts = RateLimiter::attempts($key);
+        $attemptsLeft = $this->maxAttempts - $currentAttempts;
+
+        // Record failed login attempt
+        $this->recordLoginHistory($user, $request, 'failed');
+
+        // Account just got locked
+        if ($attemptsLeft <= 0) {
+            $seconds = RateLimiter::availableIn($key);
+            $timeRemaining = $this->formatLockoutTime($seconds);
+
             return back()->withErrors([
-                'password' => 'Terlalu banyak percobaan login gagal. Akun Anda terkunci selama 5 menit.'
-            ])->withInput($request->only('email'));
+                'password' => 'Password salah.',
+                'info' => "Akun terkunci selama {$timeRemaining} karena 3x percobaan gagal.",
+            ])->withInput($request->only('email'))
+              ->with('lockout_seconds', $seconds);
         }
 
-        $remainingAttempts = 3 - $attempts;
+        // Still has attempts left
         return back()->withErrors([
-            'password' => "Password salah. Sisa percobaan: {$remainingAttempts}"
+            'password' => 'Password salah.',
+            'info' => "Sisa percobaan: {$attemptsLeft}. Setelah 3x gagal, akun akan terkunci selama 5 menit.",
         ])->withInput($request->only('email'));
     }
 
@@ -196,9 +224,8 @@ class LoginController extends Controller
                 'login_at' => now(),
             ]);
         } catch (\Exception $e) {
-            // Silently fail if login history recording fails
-            // Don't block the login process
             \Log::error('Failed to record login history: ' . $e->getMessage());
         }
     }
 }
+

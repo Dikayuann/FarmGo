@@ -240,17 +240,22 @@
     <script src="https://app.sandbox.midtrans.com/snap/snap.js"
         data-client-key="{{ config('midtrans.client_key') }}"></script>
     <script>
+        let currentOrderId = null;
+        let paymentMethodSelected = false;
+
         function processPayment() {
-            // Show loading
-            Swal.fire({
-                title: 'Memproses...',
-                text: 'Membuat transaksi pembayaran',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
+            const btn = event.currentTarget;
+            const originalText = btn.innerHTML;
+
+            // Show loading state on button
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Memproses...
+            `;
 
             // Create payment
             fetch('{{ route('langganan.payment') }}', {
@@ -265,38 +270,42 @@
             })
                 .then(response => response.json())
                 .then(data => {
-                    Swal.close();
+                    // Restore button
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
 
                     if (data.success) {
                         // For trial activation
                         if (data.is_trial) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Trial Aktif!',
-                                text: data.message,
-                                confirmButtonColor: '#059669'
-                            }).then(() => {
+                            window.dispatchEvent(new CustomEvent('notify', {
+                                detail: { variant: 'success', title: 'Trial Aktif!', message: data.message }
+                            }));
+                            setTimeout(() => {
                                 window.location.href = '{{ route('dashboard') }}';
-                            });
+                            }, 1500);
                             return;
                         }
+
+                        // Track order ID and reset payment method flag
+                        currentOrderId = data.order_id;
+                        paymentMethodSelected = false;
 
                         // Open Midtrans Snap
                         snap.pay(data.snap_token, {
                             onSuccess: function (result) {
-                                console.log('Payment success:', result);
+                                paymentMethodSelected = true;
 
-                                // Show loading while verifying
-                                Swal.fire({
-                                    title: 'Memverifikasi Pembayaran...',
-                                    text: 'Mohon tunggu sebentar',
-                                    allowOutsideClick: false,
-                                    didOpen: () => {
-                                        Swal.showLoading();
-                                    }
-                                });
+                                // Show checking status
+                                btn.disabled = true;
+                                btn.innerHTML = `
+                                    <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                    </svg>
+                                    Memverifikasi...
+                                `;
 
-                                // Wait a bit then check status to ensure webhook has processed
+                                // Wait then check status
                                 setTimeout(() => {
                                     fetch(`/langganan/check-status/${data.order_id}`, {
                                         method: 'POST',
@@ -308,71 +317,71 @@
                                         .then(response => response.json())
                                         .then(statusData => {
                                             if (statusData.paid) {
-                                                Swal.fire({
-                                                    icon: 'success',
-                                                    title: 'Pembayaran Berhasil!',
-                                                    text: 'Terima kasih, langganan Anda telah aktif',
-                                                    confirmButtonColor: '#059669'
-                                                }).then(() => {
+                                                window.dispatchEvent(new CustomEvent('notify', {
+                                                    detail: { variant: 'success', title: 'Berhasil!', message: 'Pembayaran berhasil, langganan Anda telah aktif' }
+                                                }));
+                                                setTimeout(() => {
                                                     window.location.href = '{{ route('dashboard') }}';
-                                                });
+                                                }, 1500);
                                             } else {
-                                                // Status not updated yet, redirect to pending page for auto-polling
                                                 window.location.href = `/langganan/pending/${data.order_id}`;
                                             }
                                         })
-                                        .catch(error => {
-                                            console.error('Status check error:', error);
-                                            // On error, redirect to pending page
+                                        .catch(() => {
                                             window.location.href = `/langganan/pending/${data.order_id}`;
                                         });
-                                }, 2000); // Wait 2 seconds for webhook to process
+                                }, 2000);
                             },
                             onPending: function (result) {
-                                console.log('Payment pending:', result);
-                                // Redirect to pending payment page
+                                // User has selected a payment method - keep the transaction
+                                paymentMethodSelected = true;
                                 window.location.href = `/langganan/pending/${data.order_id}`;
                             },
                             onError: function (result) {
-                                console.log('Payment error:', result);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Pembayaran Gagal',
-                                    text: 'Terjadi kesalahan, silakan coba lagi',
-                                    confirmButtonColor: '#dc2626'
-                                });
+                                // Payment failed - cancel the transaction
+                                cancelUnusedTransaction(data.order_id);
+                                window.dispatchEvent(new CustomEvent('notify', {
+                                    detail: { variant: 'error', title: 'Gagal', message: 'Pembayaran gagal. Silakan coba lagi.' }
+                                }));
                             },
                             onClose: function () {
-                                console.log('Snap popup closed');
-                                // User closed the popup without completing payment
-                                Swal.fire({
-                                    icon: 'info',
-                                    title: 'Pembayaran Dibatalkan',
-                                    text: 'Anda bisa melanjutkan pembayaran kapan saja',
-                                    confirmButtonColor: '#059669'
-                                }).then(() => {
-                                    window.location.href = '{{ route('langganan.index') }}';
-                                });
+                                // User closed popup - if no method was selected, cancel the transaction
+                                if (!paymentMethodSelected) {
+                                    cancelUnusedTransaction(data.order_id);
+                                    window.dispatchEvent(new CustomEvent('notify', {
+                                        detail: { variant: 'warning', title: 'Transaksi Dibatalkan', message: 'Transaksi otomatis dibatalkan karena belum memilih metode pembayaran.' }
+                                    }));
+                                }
                             }
                         });
                     } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: data.message || 'Terjadi kesalahan',
-                            confirmButtonColor: '#dc2626'
-                        });
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: { variant: 'error', title: 'Gagal', message: data.message || 'Terjadi kesalahan' }
+                        }));
                     }
                 })
                 .catch(error => {
-                    Swal.close();
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Gagal membuat transaksi: ' + error.message,
-                        confirmButtonColor: '#dc2626'
-                    });
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { variant: 'error', title: 'Error', message: 'Gagal membuat transaksi: ' + error.message }
+                    }));
                 });
+        }
+
+        /**
+         * Cancel transaction that was created but user didn't select a payment method
+         */
+        function cancelUnusedTransaction(orderId) {
+            fetch(`/langganan/cancel-transaction/${orderId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            }).catch(() => {
+                // Silent fail - transaction will expire on its own
+            });
         }
     </script>
 @endpush

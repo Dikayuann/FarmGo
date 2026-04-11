@@ -61,11 +61,31 @@ class DashboardController extends Controller
         // 8. Calendar: Generate auto-events if needed
         $this->generateAutoEvents($user->id);
 
-        // 9. Calendar: Get upcoming events
-        $upcomingEvents = \App\Models\CalendarEvent::where('user_id', $user->id)
+        // 9. Calendar: Get upcoming events (transform for @js() in event-timeline)
+        $upcomingEventsRaw = \App\Models\CalendarEvent::where('user_id', $user->id)
             ->upcoming(30)
             ->with('animal')
             ->get();
+
+        $upcomingEvents = $upcomingEventsRaw->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'event_date' => $event->event_date->format('Y-m-d'),
+                'event_type' => $event->event_type,
+                'type_color' => $event->type_color,
+                'type_icon' => $event->type_icon,
+                'days_until' => $event->days_until,
+                'countdown_text' => $event->countdown_text,
+                'completed' => $event->completed,
+                'animal' => $event->animal ? [
+                    'id' => $event->animal->id,
+                    'nama' => $event->animal->nama_hewan,
+                    'kode' => $event->animal->kode_hewan,
+                ] : null,
+            ];
+        })->values();
 
         // 10. Calendar: Get calendar data for current month
         $calendarData = $this->getCalendarDataForView($user->id);
@@ -235,10 +255,29 @@ class DashboardController extends Controller
             ->with('animal')
             ->get();
 
-        // Group events by date
-        $eventsByDate = $events->groupBy(function ($event) {
-            return $event->event_date->format('Y-m-d');
+        // Transform events to include computed attributes and proper date format
+        $eventsData = $events->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'event_date' => $event->event_date->format('Y-m-d'),
+                'event_type' => $event->event_type,
+                'type_color' => $event->type_color,
+                'type_icon' => $event->type_icon,
+                'days_until' => $event->days_until,
+                'countdown_text' => $event->countdown_text,
+                'completed' => $event->completed,
+                'animal' => $event->animal ? [
+                    'id' => $event->animal->id,
+                    'nama' => $event->animal->nama_hewan,
+                    'kode' => $event->animal->kode_hewan,
+                ] : null,
+            ];
         });
+
+        // Group events by date string
+        $eventsByDate = $eventsData->groupBy('event_date');
 
         return [
             'current_month' => $date->format('F Y'),

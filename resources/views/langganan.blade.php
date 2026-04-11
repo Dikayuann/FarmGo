@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Pilih Paket - FarmGo')
 @section('page-title', 'Pilih Paket Langganan')
@@ -357,7 +357,7 @@
     @if($pendingTransaction)
         <div class="mt-12">
             <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-2xl p-8 shadow-lg">
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between flex-wrap gap-4">
                     <div class="flex items-center gap-6">
                         <div
                             class="bg-gradient-to-br from-blue-500 to-blue-600 text-white w-16 h-16 rounded-2xl flex items-center justify-center animate-pulse shadow-lg">
@@ -369,19 +369,29 @@
                         <div>
                             <p class="font-bold text-xl text-gray-900">Pembayaran Menunggu</p>
                             <p class="text-gray-600 mt-1">
-                                Order <span class="font-mono font-semibold">#{{ $pendingTransaction->order_id }}</span> �
+                                Order <span class="font-mono font-semibold">#{{ $pendingTransaction->order_id }}</span>
+                                &middot;
                                 <span class="font-semibold">Rp
                                     {{ number_format($pendingTransaction->gross_amount, 0, ',', '.') }}</span>
                                 @if($pendingTransaction->expired_at)
-                                    � Kadaluarsa {{ $pendingTransaction->expired_at->diffForHumans() }}
+                                    &middot; Kadaluarsa {{ $pendingTransaction->expired_at->diffForHumans() }}
                                 @endif
                             </p>
                         </div>
                     </div>
-                    <a href="{{ route('langganan.pending', $pendingTransaction->order_id) }}"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors shadow-lg whitespace-nowrap">
-                        Lanjutkan Pembayaran
-                    </a>
+                    <div class="flex items-center gap-3">
+                        <form id="form-cancel-transaction" action="{{ route('langganan.cancel-transaction', $pendingTransaction->order_id) }}" method="POST">
+                            @csrf
+                            <button type="button" onclick="confirmCancelTransaction('form-cancel-transaction')"
+                                class="bg-white hover:bg-red-50 text-red-600 border border-red-300 px-5 py-3 rounded-xl font-semibold transition-colors whitespace-nowrap">
+                                Batalkan
+                            </button>
+                        </form>
+                        <a href="{{ route('langganan.pending', $pendingTransaction->order_id) }}"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-colors shadow-lg whitespace-nowrap">
+                            Lanjutkan Pembayaran
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -442,7 +452,24 @@
 @endsection
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        function confirmCancelTransaction(formId) {
+            Swal.fire({
+                title: 'Batalkan Transaksi?',
+                text: "Yakin ingin membatalkan transaksi ini? Tindakan ini tidak bisa dibatalkan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Kembali'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            })
+        }
         // Check for unread subscription notifications
         document.addEventListener('DOMContentLoaded', function () {
             fetch('/notifications/unread-count')

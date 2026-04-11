@@ -70,7 +70,7 @@
 
         <!-- Help Text -->
         <div class="mt-8 text-sm text-gray-500">
-            <p>Pertanyaan? <a href="mailto:support@farmgo.com" class="text-amber-600 hover:underline">Hubungi
+            <p>Pertanyaan? <a href="mailto:dev@zerollz.biz.id" class="text-amber-600 hover:underline">Hubungi
                     Support</a></p>
         </div>
     </div>

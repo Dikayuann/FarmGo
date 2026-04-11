@@ -13,6 +13,17 @@ class AiAssistantController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
+        // Rate limiting: max 10 messages per minute per user
+        $key = 'ai-chat:' . Auth::id();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($key, 10)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($key);
+            return response()->json([
+                'success' => false,
+                'message' => "Terlalu banyak permintaan. Silakan tunggu {$seconds} detik.",
+            ], 429);
+        }
+        \Illuminate\Support\Facades\RateLimiter::hit($key, 60);
+
         $userMessage = $request->input('message');
         $user = Auth::user();
 

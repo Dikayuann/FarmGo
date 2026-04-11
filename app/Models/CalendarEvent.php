@@ -24,6 +24,17 @@ class CalendarEvent extends Model
         'reminder_sent' => 'boolean',
     ];
 
+    /**
+     * Accessors to append when serializing to JSON
+     * Required for @js() in Blade templates (calendar widget & event timeline)
+     */
+    protected $appends = [
+        'type_color',
+        'type_icon',
+        'days_until',
+        'countdown_text',
+    ];
+
     // Event types constants
     const TYPE_VACCINATION = 'vaccination';
     const TYPE_BIRTH_ESTIMATE = 'birth_estimate';

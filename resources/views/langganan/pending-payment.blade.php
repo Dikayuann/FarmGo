@@ -285,10 +285,17 @@
                 </svg>
                 Cek Status Pembayaran
             </button>
-            <a href="{{ route('langganan.index') }}"
-                class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-4 rounded-xl transition-colors shadow-lg text-center">
-                Kembali
-            </a>
+            <form id="form-cancel-payment" action="{{ route('langganan.cancel-transaction', $transaction->order_id) }}" method="POST" class="flex-1">
+                @csrf
+                <button type="button" onclick="confirmCancelTransaction('form-cancel-payment')"
+                    class="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 font-semibold py-4 rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                    Batalkan Transaksi
+                </button>
+            </form>
         </div>
 
         {{-- Help Section --}}
@@ -302,8 +309,8 @@
                     <p class="font-semibold text-gray-900 mb-2">Butuh Bantuan?</p>
                     <p class="text-sm text-gray-600">
                         Jika ada kendala dalam pembayaran, hubungi support kami di
-                        <a href="mailto:support@farmgo.com"
-                            class="text-blue-600 hover:text-blue-700 font-semibold">support@farmgo.com</a>
+                        <a href="mailto:dev@zerollz.biz.id"
+                            class="text-blue-600 hover:text-blue-700 font-semibold">dev@zerollz.biz.id</a>
                         atau WhatsApp <a href="https://wa.me/6281234567890"
                             class="text-blue-600 hover:text-blue-700 font-semibold">0812-3456-7890</a>
                     </p>
@@ -316,8 +323,25 @@
 @endsection
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script>
+        function confirmCancelTransaction(formId) {
+            Swal.fire({
+                title: 'Batalkan Transaksi?',
+                text: "Yakin ingin membatalkan transaksi ini? Tindakan ini tidak bisa dibatalkan.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Ya, Batalkan',
+                cancelButtonText: 'Kembali'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById(formId).submit();
+                }
+            })
+        }
         // Countdown Timer
         @if($transaction->expired_at)
             const expiredAt = new Date('{{ $transaction->expired_at->toIso8601String() }}').getTime();

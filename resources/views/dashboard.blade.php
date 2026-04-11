@@ -57,13 +57,13 @@
         </a>
 
         <div
-            class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition">
-            <div>
+            class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-start justify-between hover:shadow-md transition min-w-0">
+            <div class="min-w-0 flex-1 mr-3">
                 <p class="text-sm font-medium text-gray-500 mb-2">Status <br>Peternakan</p>
-                <h3 class="text-4xl font-bold text-gray-800">{{ $statusPeternakan }}</h3>
+                <h3 class="text-2xl font-bold text-gray-800 break-words leading-tight">{{ $statusPeternakan }}</h3>
             </div>
             <div
-                class="bg-green-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-green-200 shadow-lg">
+                class="bg-green-500 h-12 w-12 rounded-xl flex items-center justify-center text-white shadow-green-200 shadow-lg shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>

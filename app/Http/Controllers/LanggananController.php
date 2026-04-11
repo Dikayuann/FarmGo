@@ -445,7 +445,7 @@ class LanggananController extends Controller
         }
 
 
-        // Check if user has active subscription(s)
+        // Check if user has existing subscription(s) with status 'aktif'
         $activeSubscriptions = Langganan::where('user_id', $transaction->user_id)
             ->where('status', 'aktif')
             ->orderBy('tanggal_mulai', 'asc')
@@ -455,11 +455,12 @@ class LanggananController extends Controller
             // Get the primary (oldest) active subscription
             $primarySubscription = $activeSubscriptions->first();
 
-            \Log::info('Extending existing subscription', [
+            \Log::info('Found existing subscription', [
                 'order_id' => $transaction->order_id,
                 'primary_langganan_id' => $primarySubscription->id,
                 'active_count' => $activeSubscriptions->count(),
                 'current_end_date' => $primarySubscription->tanggal_berakhir->format('Y-m-d'),
+                'is_expired' => $primarySubscription->tanggal_berakhir->isPast(),
             ]);
 
             // If there are multiple active subscriptions (bug from before), consolidate them
@@ -475,16 +476,49 @@ class LanggananController extends Controller
                 });
             }
 
-            // IMPORTANT: Use copy() to avoid mutating the original Carbon instance
-            $currentEndDate = $primarySubscription->tanggal_berakhir->copy();
-            $newEndDate = $currentEndDate->addMonths($packageDuration);
+            // FIX: If subscription is expired, start fresh from today
+            // instead of extending from old expired date
+            if ($primarySubscription->tanggal_berakhir->isPast()) {
+                // Subscription expired — start new period from TODAY
+                $newStartDate = now();
+                $newEndDate = now()->addMonths($packageDuration);
 
-            $primarySubscription->update([
-                'tanggal_berakhir' => $newEndDate,
-            ]);
+                $primarySubscription->update([
+                    'tanggal_mulai' => $newStartDate,
+                    'tanggal_berakhir' => $newEndDate,
+                    'paket_langganan' => $packageType,
+                    'harga' => $transaction->gross_amount,
+                ]);
+
+                \Log::info('Subscription restarted from today (was expired)', [
+                    'order_id' => $transaction->order_id,
+                    'new_start' => $newStartDate->format('Y-m-d'),
+                    'new_end' => $newEndDate->format('Y-m-d'),
+                ]);
+            } else {
+                // Still active — extend from current end date
+                $currentEndDate = $primarySubscription->tanggal_berakhir->copy();
+                $newEndDate = $currentEndDate->addMonths($packageDuration);
+
+                $primarySubscription->update([
+                    'tanggal_berakhir' => $newEndDate,
+                ]);
+
+                \Log::info('Subscription extended from current end date', [
+                    'order_id' => $transaction->order_id,
+                    'old_end' => $primarySubscription->getOriginal('tanggal_berakhir'),
+                    'new_end' => $newEndDate->format('Y-m-d'),
+                ]);
+            }
 
             // Link transaction to primary langganan
             $transaction->update(['langganan_id' => $primarySubscription->id]);
+
+            // Update user role to premium (in case it was downgraded)
+            $primarySubscription->user->update([
+                'role' => \App\Models\User::ROLE_PREMIUM,
+                'status_langganan' => 'premium',
+            ]);
 
             // Create notification for subscription extension
             \App\Models\Notifikasi::create([
@@ -504,10 +538,9 @@ class LanggananController extends Controller
                 $transaction
             );
 
-            \Log::info('Subscription extended successfully', [
+            \Log::info('Subscription renewal completed', [
                 'order_id' => $transaction->order_id,
                 'langganan_id' => $primarySubscription->id,
-                'old_end_date' => $currentEndDate->format('Y-m-d'),
                 'new_end_date' => $newEndDate->format('Y-m-d'),
                 'months_added' => $packageDuration,
             ]);
@@ -725,9 +758,8 @@ class LanggananController extends Controller
     {
         $user = Auth::user();
 
-        // Get all successful transactions (these are the actual payments)
+        // Get ALL transactions (not just settlement) so user can see full history
         $transactions = Transaction::where('user_id', $user->id)
-            ->where('status', 'settlement')
             ->with('langganan')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -758,5 +790,75 @@ class LanggananController extends Controller
         $subscription->cancel();
 
         return back()->with('success', 'Perpanjangan otomatis berhasil dibatalkan');
+    }
+
+    /**
+     * Cancel a pending transaction (form POST from langganan page)
+     */
+    public function cancelTransaction($orderId)
+    {
+        $user = Auth::user();
+
+        $transaction = Transaction::where('order_id', $orderId)
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$transaction) {
+            return redirect()->route('langganan.index')
+                ->with('error', 'Transaksi tidak ditemukan atau sudah diproses.');
+        }
+
+        // Try to cancel on Midtrans side too
+        try {
+            \Midtrans\Transaction::cancel($orderId);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to cancel Midtrans transaction', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $transaction->update(['status' => 'cancel']);
+
+        return redirect()->route('langganan.index')
+            ->with('success', 'Transaksi berhasil dibatalkan.');
+    }
+
+    /**
+     * Cancel a pending transaction via AJAX (from checkout/snap close)
+     */
+    public function cancelTransactionJson(Request $request, $orderId)
+    {
+        $user = Auth::user();
+
+        $transaction = Transaction::where('order_id', $orderId)
+            ->where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if (!$transaction) {
+            return response()->json(['success' => false, 'message' => 'Transaksi tidak ditemukan.'], 404);
+        }
+
+        // Only cancel if no payment method was selected yet
+        if (!$transaction->payment_type) {
+            try {
+                \Midtrans\Transaction::cancel($orderId);
+            } catch (\Exception $e) {
+                \Log::warning('Failed to cancel Midtrans transaction', [
+                    'order_id' => $orderId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Completely delete the local transaction record so it doesn't clutter DB
+            $transaction->delete();
+
+            return response()->json(['success' => true, 'message' => 'Transaksi dibatalkan dan dihapus.']);
+        }
+
+        // If payment method was already selected, keep it as pending
+        return response()->json(['success' => false, 'message' => 'Transaksi sudah memiliki metode pembayaran.']);
     }
 }

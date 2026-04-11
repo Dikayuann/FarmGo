@@ -116,81 +116,76 @@
 
         {{-- Stats Cards --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            {{-- Total Ternak --}}
+            <div class="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Total Ternak</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['total'] ?? 0 }}</p>
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Total Ternak</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['total'] ?? 0 }}</p>
                     </div>
-                    <div class="h-12 w-12 bg-emerald-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
-                            </path>
+                    <div class="h-10 w-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            {{-- Sapi --}}
+            <div class="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Sapi</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['sapi'] ?? 0 }}</p>
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Sapi</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['sapi'] ?? 0 }}</p>
                     </div>
-                    <div class="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                            </path>
+                    <div class="h-10 w-10 bg-blue-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            {{-- Kambing --}}
+            <div class="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Kambing</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['kambing'] ?? 0 }}</p>
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Kambing</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['kambing'] ?? 0 }}</p>
                     </div>
-                    <div class="h-12 w-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
-                            </path>
+                    <div class="h-10 w-10 bg-purple-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            {{-- Domba --}}
+            <div class="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Domba</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['domba'] ?? 0 }}</p>
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Domba</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['domba'] ?? 0 }}</p>
                     </div>
-                    <div class="h-12 w-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
+                    <div class="h-10 w-10 bg-orange-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            {{-- Status Beli --}}
+            <div class="bg-white p-5 rounded-2xl shadow-sm ring-1 ring-gray-900/5">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-500">Status Beli</p>
-                        <p class="text-3xl font-bold text-gray-900 mt-2">{{ $stats['beli'] ?? 0 }}</p>
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status Beli</p>
+                        <p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['beli'] ?? 0 }}</p>
                     </div>
-                    <div class="h-12 w-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z">
-                            </path>
+                    <div class="h-10 w-10 bg-green-50 rounded-xl flex items-center justify-center">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                         </svg>
                     </div>
                 </div>
@@ -198,178 +193,131 @@
         </div>
 
 
-        {{-- Header & Actions --}}
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h2 class="text-2xl font-semibold text-gray-800">Daftar Hewan Ternak</h2>
-
-            <div class="flex flex-wrap gap-3">
-                <button @click="showCreateModal = true"
-                    class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    <span>Tambah Ternak</span>
-                </button>
-
-                <button onclick="openScanModal()"
-                    class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm font-medium">
-                    <i class="fa-solid fa-camera text-sm"></i>
-                    <span>Pindai QR</span>
-                </button>
-
-                <button @click="printAllQR()"
-                    class="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 px-4 py-2 rounded-lg transition shadow-sm font-medium">
-                    <i class="fa-solid fa-print text-sm"></i>
-                    <span>Cetak Semua QR</span>
-                </button>
-            </div>
-        </div>
-
-        {{-- Filters --}}
-        <form method="GET" action="{{ route('ternak.index') }}"
-            class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div class="relative w-full md:w-96">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
+        {{-- Unified Sleek Toolbar --}}
+        <div class="bg-white p-4 rounded-2xl shadow-sm ring-1 ring-gray-900/5 flex flex-col gap-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <h2 class="text-lg font-bold text-gray-800">Daftar Hewan Ternak</h2>
+                <div class="flex flex-wrap gap-2">
+                    <button @click="showCreateModal = true" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                        </svg>
+                        <span>Tambah Ternak</span>
+                    </button>
+                    <button onclick="openScanModal()" class="flex items-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-sm font-medium transition">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Pindai QR</span>
+                    </button>
+                    <button @click="printAllQR()" class="flex items-center gap-2 bg-gray-50 text-gray-700 hover:bg-gray-100 px-3 py-1.5 rounded-lg text-sm font-medium transition">
+                        <i class="fa-solid fa-print"></i>
+                        <span>Cetak QR</span>
+                    </button>
                 </div>
-                <input type="text" name="search" value="{{ $search ?? '' }}"
-                    class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm transition"
-                    placeholder="Cari berdasarkan nama atau ID...">
             </div>
 
-            <div class="flex gap-4 w-full md:w-auto">
-                <select name="jenis"
-                    class="block w-full md:w-40 pl-3 pr-10 py-2 text-base border-gray-200 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg bg-gray-50 text-gray-600"
-                    onchange="this.form.submit()">
-                    <option value="all" {{ ($jenis ?? 'all') == 'all' ? 'selected' : '' }}>Semua Jenis</option>
-                    <option value="sapi" {{ ($jenis ?? '') == 'sapi' ? 'selected' : '' }}>Sapi</option>
-                    <option value="kambing" {{ ($jenis ?? '') == 'kambing' ? 'selected' : '' }}>Kambing</option>
-                    <option value="domba" {{  ($jenis ?? '') == 'domba' ? 'selected' : '' }}>Domba</option>
-                </select>
+            <hr class="border-gray-100">
 
-                <select name="status"
-                    class="block w-full md:w-40 pl-3 pr-10 py-2 text-base border-gray-200 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm rounded-lg bg-gray-50 text-gray-600"
-                    onchange="this.form.submit()">
-                    <option value="all" {{ ($status ?? 'all') == 'all' ? 'selected' : '' }}>Semua Status</option>
-                    <option value="beli" {{ ($status ?? '') == 'beli' ? 'selected' : '' }}>Beli</option>
-                    <option value="perkawinan" {{ ($status ?? '') == 'perkawinan' ? 'selected' : '' }}>Perkawinan</option>
-                    <option value="hadiah" {{ ($status ?? '') == 'hadiah' ? 'selected' : '' }}>Hadiah</option>
-                </select>
-            </div>
-        </form>
+            <form method="GET" action="{{ route('ternak.index') }}" class="flex flex-col md:flex-row gap-3 items-center justify-between">
+                <div class="relative w-full md:w-80">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input type="text" name="search" value="{{ $search ?? '' }}"
+                        class="block w-full pl-9 pr-3 py-1.5 border-none bg-gray-50 rounded-lg text-sm placeholder-gray-400 focus:bg-white focus:ring-1 focus:ring-emerald-500 transition"
+                        placeholder="Cari nama atau ID...">
+                </div>
+
+                <div class="flex w-full md:w-auto gap-2">
+                    <select name="jenis" class="block w-full md:w-auto pl-3 pr-8 py-1.5 bg-gray-50 border-none text-sm text-gray-600 rounded-lg focus:ring-1 focus:ring-emerald-500 cursor-pointer" onchange="this.form.submit()">
+                        <option value="all" {{ ($jenis ?? 'all') == 'all' ? 'selected' : '' }}>Semua Jenis</option>
+                        <option value="sapi" {{ ($jenis ?? '') == 'sapi' ? 'selected' : '' }}>Sapi</option>
+                        <option value="kambing" {{ ($jenis ?? '') == 'kambing' ? 'selected' : '' }}>Kambing</option>
+                        <option value="domba" {{ ($jenis ?? '') == 'domba' ? 'selected' : '' }}>Domba</option>
+                    </select>
+
+                    <select name="status" class="block w-full md:w-auto pl-3 pr-8 py-1.5 bg-gray-50 border-none text-sm text-gray-600 rounded-lg focus:ring-1 focus:ring-emerald-500 cursor-pointer" onchange="this.form.submit()">
+                        <option value="all" {{ ($status ?? 'all') == 'all' ? 'selected' : '' }}>Semua Status</option>
+                        <option value="beli" {{ ($status ?? '') == 'beli' ? 'selected' : '' }}>Beli</option>
+                        <option value="perkawinan" {{ ($status ?? '') == 'perkawinan' ? 'selected' : '' }}>Perkawinan</option>
+                        <option value="hadiah" {{ ($status ?? '') == 'hadiah' ? 'selected' : '' }}>Hadiah</option>
+                    </select>
+                </div>
+            </form>
+        </div>
 
         {{-- Table --}}
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-900/5 overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-white border-b border-gray-100">
                         <tr>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Kode</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Nama</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Jenis & Ras</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Jenis Kelamin</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Usia</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Berat</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Status</th>
-                            <th scope="col"
-                                class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Aksi</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Kode</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Nama</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Jenis & Ras</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Gender</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Usia</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Berat</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-wider text-right">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="divide-y divide-gray-50">
                         @forelse ($animals as $animal)
-                            <tr class="hover:bg-gray-50 transition">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            <tr class="hover:bg-gray-50/50 transition">
+                                <td class="px-6 py-4 font-medium text-gray-700">
                                     {{ $animal->kode_hewan }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $animal->nama_hewan }}
+                                <td class="px-6 py-4 font-semibold text-gray-900">
+                                    {{ $animal->nama_hewan }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                                    <div>
-                                        <p class="font-medium">{{ ucfirst($animal->jenis_hewan) }}</p>
-                                        <p class="text-xs text-gray-500">{{ $animal->ras_hewan }}</p>
+                                <td class="px-6 py-4">
+                                    <div class="flex flex-col">
+                                        <span class="text-gray-800">{{ ucfirst($animal->jenis_hewan) }}</span>
+                                        <span class="text-[11px] text-gray-400">{{ $animal->ras_hewan }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                <td class="px-6 py-4 text-gray-600">
                                     {{ ucfirst($animal->jenis_kelamin) }}
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $animal->usia }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ $animal->berat_badan }}
-                                    kg</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-6 py-4 text-gray-600">{{ $animal->usia }}</td>
+                                <td class="px-6 py-4 text-gray-600">{{ $animal->berat_badan }} kg</td>
+                                <td class="px-6 py-4">
                                     @if ($animal->status_ternak == 'beli')
-                                        <span
-                                            class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                            Beli
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 text-[11px] font-medium tracking-wide">Beli</span>
                                     @elseif($animal->status_ternak == 'perkawinan')
-                                        <span
-                                            class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                            Perkawinan
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-md bg-purple-50 text-purple-600 text-[11px] font-medium tracking-wide">Perkawinan</span>
                                     @else
-                                        <span
-                                            class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800">
-                                            Hadiah
-                                        </span>
+                                        <span class="px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 text-[11px] font-medium tracking-wide">Hadiah</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex items-center justify-end gap-3">
-                                        <button type="button"
-                                            @click="currentAnimal = {{ json_encode($animal) }}; showQRModal = true"
-                                            class="text-gray-400 hover:text-gray-600 transition" title="Lihat QR">
-                                            <i class="fa-solid fa-qrcode text-lg"></i>
+                                <td class="px-6 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <button type="button" @click="currentAnimal = {{ json_encode($animal) }}; showQRModal = true"
+                                            class="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition" title="Lihat QR">
+                                            <i class="fa-solid fa-qrcode"></i>
                                         </button>
                                         <a href="{{ route('ternak.show', $animal->id) }}"
-                                            class="text-emerald-600 hover:text-emerald-700 transition" title="Edit">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                </path>
-                                            </svg>
+                                            class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition" title="Edit">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                         </a>
-                                        <button type="button"
-                                            @click="currentAnimal = {{ json_encode($animal) }}; showDeleteModal = true"
-                                            class="text-red-500 hover:text-red-700 transition" title="Hapus">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
+                                        <button type="button" @click="currentAnimal = {{ json_encode($animal) }}; showDeleteModal = true"
+                                            class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition" title="Hapus">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-16 text-center">
                                     <div class="flex flex-col items-center justify-center text-gray-400">
-                                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z">
-                                            </path>
-                                        </svg>
-                                        <p class="text-lg font-medium">Belum ada data ternak</p>
-                                        <p class="text-sm mt-1">Klik tombol "Tambah Ternak" untuk menambahkan hewan
-                                            ternak</p>
+                                        <div class="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                                            <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.384-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                        </div>
+                                        <p class="text-base font-medium text-gray-900">Belum ada data ternak</p>
+                                        <p class="text-sm mt-1">Klik tombol "Tambah Ternak" di atas untuk menambahkan profil hewan ternak Anda.</p>
                                     </div>
                                 </td>
                             </tr>

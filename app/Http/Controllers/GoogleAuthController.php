@@ -59,16 +59,16 @@ class GoogleAuthController extends Controller
 
                 // Check role and subscription
                 if ($user->isAdmin()) {
-                    return redirect('/admin?google_email=' . urlencode($googleEmail));
+                    return redirect('/admin');
                 }
 
                 // Check if user has active subscription
                 if (!$user->hasActivePremium() && !$user->isOnTrial()) {
-                    return redirect()->route('langganan', ['google_email' => $googleEmail])
+                    return redirect()->route('langganan')
                         ->with('info', 'Selamat datang kembali! Silakan pilih paket langganan untuk melanjutkan.');
                 }
 
-                return redirect()->route('dashboard', ['google_email' => $googleEmail])
+                return redirect()->route('dashboard')
                     ->with('success', 'Berhasil login dengan Google!');
             }
 
@@ -87,10 +87,8 @@ class GoogleAuthController extends Controller
             $request->session()->regenerate();
 
             // Redirect new users to pricing page
-            return redirect()->route('langganan', [
-                'google_email' => $googleEmail,
-                'first_time' => '1'
-            ])->with('success', 'Akun berhasil dibuat! Silakan pilih paket langganan.');
+            return redirect()->route('langganan')
+                ->with('success', 'Akun berhasil dibuat! Silakan pilih paket langganan.');
 
         } catch (\Laravel\Socialite\Two\InvalidStateException $e) {
             \Log::warning('Google OAuth Invalid State - User may have refreshed or taken too long', [

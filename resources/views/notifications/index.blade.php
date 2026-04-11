@@ -12,7 +12,7 @@
                     <p class="text-gray-600">Kelola semua notifikasi Anda</p>
                 </div>
                 <div class="flex gap-3">
-                    @if($notifications->where('status', 'belum_dibaca')->count() > 0)
+                    @if($notificationCount > 0)
                         <form action="{{ route('notifications.mark-all-read') }}" method="POST">
                             @csrf
                             <button type="submit"

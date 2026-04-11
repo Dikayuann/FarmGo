@@ -110,12 +110,13 @@ Route::get('/langganan/payment-status/{orderId}', [App\Http\Controllers\Langgana
 Route::post('/langganan/activate-trial', [App\Http\Controllers\LanggananController::class, 'activateTrial'])->middleware('auth')->name('langganan.activate-trial');
 Route::get('/langganan/history', [App\Http\Controllers\LanggananController::class, 'paymentHistory'])->middleware('auth')->name('langganan.history');
 Route::post('/langganan/cancel', [App\Http\Controllers\LanggananController::class, 'cancelSubscription'])->middleware('auth')->name('langganan.cancel');
+Route::post('/langganan/cancel-transaction/{orderId}', [App\Http\Controllers\LanggananController::class, 'cancelTransaction'])->middleware('auth')->name('langganan.cancel-transaction');
+Route::delete('/langganan/cancel-transaction/{orderId}', [App\Http\Controllers\LanggananController::class, 'cancelTransactionJson'])->middleware('auth')->name('langganan.cancel-transaction-ajax');
 
 Route::get('/login', [LoginController::class, 'view']);
-Route::post('/login', [LoginController::class, 'login'])->name('login');
-
-// Route untuk clear lockout (jika user terkunci)
-Route::get('/login/clear-lockout', [LoginController::class, 'clearLockout'])->name('login.clear');
+Route::post('/login', [LoginController::class, 'login'])
+    ->middleware('throttle:15,1')  // Max 15 attempts per minute per IP (global fallback)
+    ->name('login');
 
 Route::get('/register', [RegisterController::class, 'view'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])
@@ -128,7 +129,9 @@ Route::post('/forgot-password', [App\Http\Controllers\ForgotPasswordController::
 
 // Reset Password Routes
 Route::get('/reset-password/{token}', [App\Http\Controllers\ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-Route::post('/reset-password', [App\Http\Controllers\ResetPasswordController::class, 'reset'])->name('password.update');
+Route::post('/reset-password', [App\Http\Controllers\ResetPasswordController::class, 'reset'])
+    ->middleware('throttle:5,15')  // Max 5 attempts per 15 minutes
+    ->name('password.update');
 
 // Email Verification Routes - DISABLED TEMPORARILY
 // Route::get('/email/verify', [App\Http\Controllers\EmailVerificationController::class, 'notice'])

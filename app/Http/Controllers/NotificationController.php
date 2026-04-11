@@ -17,12 +17,13 @@ class NotificationController extends Controller
 
         $query = Notifikasi::forUser($user->id)
             ->with(['animal', 'perkawinan'])
+            ->whereIn('status', ['belum_dibaca', 'sudah_dibaca']) // Exclude pending
             ->orderBy('tanggal_kirim', 'desc');
 
         // Filter by status
         if ($request->has('filter')) {
             $filter = $request->filter;
-            if (in_array($filter, ['belum_dibaca', 'sudah_dibaca', 'pending'])) {
+            if (in_array($filter, ['belum_dibaca', 'sudah_dibaca'])) {
                 $query->where('status', $filter);
             }
         }
@@ -40,7 +41,7 @@ class NotificationController extends Controller
         $notification = Notifikasi::forUser(Auth::id())->findOrFail($id);
         $notification->update(['status' => 'sudah_dibaca']);
 
-        return back()->with('success', 'Notifikasi ditandai sudah dibaca');
+        return redirect()->route('notifications.index')->with('success', 'Notifikasi ditandai sudah dibaca');
     }
 
     /**
@@ -52,7 +53,7 @@ class NotificationController extends Controller
             ->unread()
             ->update(['status' => 'sudah_dibaca']);
 
-        return back()->with('success', 'Semua notifikasi ditandai sudah dibaca');
+        return redirect()->route('notifications.index')->with('success', 'Semua notifikasi ditandai sudah dibaca');
     }
 
     /**

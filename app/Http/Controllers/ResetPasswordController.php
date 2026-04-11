@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Auth\Events\PasswordReset;
 
@@ -26,6 +27,19 @@ class ResetPasswordController extends Controller
      */
     public function reset(Request $request)
     {
+        // Rate limit: max 5 attempts per 15 minutes per IP+email
+        $key = 'password-reset:' . $request->ip() . ':' . Str::lower($request->input('email', ''));
+
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            $minutes = ceil($seconds / 60);
+
+            return back()->withErrors([
+                'email' => "Terlalu banyak percobaan reset password. Silakan coba lagi dalam {$minutes} menit."
+            ]);
+        }
+
+        RateLimiter::hit($key, 900); // 15 minutes decay
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',

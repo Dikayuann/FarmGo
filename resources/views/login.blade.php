@@ -31,29 +31,78 @@
 
             {{-- Error Messages --}}
             @if ($errors->any())
-                <div class="mb-6 p-4 rounded-lg border {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200' }}"
-                    x-data="{ sent: false, loading: false }">
+                @php
+                    $isLocked = ($errors->has('email') && str_contains($errors->first('email'), 'terkunci'))
+                             || ($errors->has('password') && str_contains($errors->first('password'), 'terkunci'));
+                    $isWrongPassword = $errors->has('password') && str_contains($errors->first('password'), 'Password salah');
+                    $lockoutSeconds = session('lockout_seconds', 0);
+                @endphp
+
+                <div class="mb-6 p-4 rounded-xl border {{ $isLocked ? 'bg-red-50 border-red-200' : 'bg-orange-50 border-orange-200' }}"
+                    @if($isLocked && $lockoutSeconds > 0)
+                        x-data="{
+                            seconds: {{ $lockoutSeconds }},
+                            get formatted() {
+                                let m = Math.floor(this.seconds / 60);
+                                let s = this.seconds % 60;
+                                return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                            },
+                            init() {
+                                let timer = setInterval(() => {
+                                    this.seconds--;
+                                    if (this.seconds <= 0) {
+                                        clearInterval(timer);
+                                        window.location.reload();
+                                    }
+                                }, 1000);
+                            }
+                        }"
+                    @endif
+                >
                     <div class="flex items-start">
-                        <svg class="w-5 h-5 {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'text-red-600' : 'text-orange-600' }} mt-0.5 mr-3"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
-                            </path>
-                        </svg>
+                        @if($isLocked)
+                            {{-- Lockout icon --}}
+                            <svg class="w-5 h-5 text-red-600 mt-0.5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                            </svg>
+                        @else
+                            {{-- Warning icon --}}
+                            <svg class="w-5 h-5 text-orange-600 mt-0.5 mr-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        @endif
+
                         <div class="flex-1">
                             @foreach ($errors->all() as $error)
-                                <p
-                                    class="text-sm {{ $errors->has('email') && str_contains($errors->first('email'), 'terkunci') ? 'text-red-700' : 'text-orange-700' }} font-medium">
+                                <p class="text-sm {{ $isLocked ? 'text-red-700' : 'text-orange-700' }} font-medium">
                                     {{ $error }}
                                 </p>
                             @endforeach
 
-                            {{-- Link to clear lockout if account is locked --}}
-                            @if (($errors->has('email') && str_contains($errors->first('email'), 'terkunci')) || ($errors->has('password') && str_contains($errors->first('password'), 'terkunci')))
+                            {{-- Live countdown timer when locked --}}
+                            @if($isLocked && $lockoutSeconds > 0)
+                                <div class="mt-3 flex items-center gap-3 bg-red-100 rounded-lg px-3 py-2">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-red-600 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-sm font-bold text-red-700" x-text="'Bisa login lagi dalam: ' + formatted"></span>
+                                    </div>
+                                </div>
+                            @endif
+
+                            {{-- Help links --}}
+                            @if($isLocked)
                                 <p class="text-xs text-red-600 mt-2">
-                                    Tidak ingin menunggu?
-                                    <a href="{{ route('login.clear') }}" class="underline hover:text-red-800 font-medium">Klik
-                                        di sini untuk reset</a>
+                                    Lupa password?
+                                    <a href="{{ route('password.request') }}" class="underline hover:text-red-800 font-medium">Reset password Anda</a>
+                                </p>
+                            @elseif($isWrongPassword)
+                                <p class="text-xs text-orange-600 mt-2">
+                                    <a href="{{ route('password.request') }}" class="underline hover:text-orange-800 font-medium">Lupa password?</a>
                                 </p>
                             @endif
                         </div>

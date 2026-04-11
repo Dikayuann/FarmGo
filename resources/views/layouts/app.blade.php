@@ -12,7 +12,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    {{-- SweetAlert2 removed: using Penguin UI Alpine toast instead --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -29,20 +29,13 @@
             transition: all 0.3s ease-in-out;
         }
 
-        /* Custom Toast Styling */
-        .swal-toast-custom {
-            border-radius: 16px !important;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+        /* Toast progress bar animation */
+        @keyframes toast-shrink {
+            from { width: 100%; }
+            to { width: 0%; }
         }
-
-        .swal-toast-title {
-            font-size: 14px !important;
-            font-weight: 500 !important;
-            line-height: 1.4 !important;
-        }
-
-        .swal-toast-progress {
-            height: 3px !important;
+        .toast-progress {
+            animation: toast-shrink 5s linear forwards;
         }
     </style>
 </head>
@@ -210,7 +203,7 @@
                                 @endif
                             </div>
                             <div class="max-h-96 overflow-y-auto">
-                                @forelse(Auth::user()->notifications()->orderBy('created_at', 'desc')->take(5)->get() as $notification)
+                                @forelse(Auth::user()->notifications()->where('status', 'belum_dibaca')->orderBy('tanggal_kirim', 'desc')->take(5)->get() as $notification)
                                     <a href="{{ route('notifications.index') }}"
                                         class="block p-4 hover:bg-gray-50 transition border-b border-gray-100">
                                         <div class="flex items-start gap-3">
@@ -292,13 +285,11 @@
                                     </div>
                                 @endforelse
                             </div>
-                            @if($notificationCount > 0)
-                                <div class="p-3 border-t border-gray-200 text-center">
-                                    <a href="{{ route('notifications.index') }}"
-                                        class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua
-                                        Notifikasi</a>
-                                </div>
-                            @endif
+                            <div class="p-3 border-t border-gray-200 text-center">
+                                <a href="{{ route('notifications.index') }}"
+                                    class="text-sm text-blue-600 hover:text-blue-700 font-medium">Lihat Semua
+                                    Notifikasi</a>
+                            </div>
                         </div>
                     </div>
 
@@ -382,108 +373,75 @@
         </main>
 
         <!-- AI Assistant Floating Button & Modal -->
+        <!-- AI Assistant Floating Chat -->
         <div x-data="{
             open: false,
             messages: [],
             userInput: '',
             isLoading: false,
 
-            // Initialize - load messages from localStorage
             init() {
                 const saved = localStorage.getItem('farmgo_chat_messages');
                 if (saved) {
-                    try {
-                        this.messages = JSON.parse(saved);
-                    } catch (e) {
-                        this.messages = [];
-                    }
+                    try { this.messages = JSON.parse(saved); }
+                    catch (e) { this.messages = []; }
                 }
             },
-
-            // Save messages to localStorage
             saveMessages() {
                 localStorage.setItem('farmgo_chat_messages', JSON.stringify(this.messages));
             },
-
-            // Clear chat history
             clearChat() {
                 this.messages = [];
                 localStorage.removeItem('farmgo_chat_messages');
             },
-
-            // Convert basic markdown to HTML
             renderMarkdown(text) {
                 return text
                     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                     .replace(/\*(.+?)\*/g, '<em>$1</em>')
                     .replace(/\n/g, '<br>');
             },
-
             async sendMessage() {
                 if (!this.userInput.trim() || this.isLoading) return;
-
                 const message = this.userInput.trim();
                 this.messages.push({ role: 'user', content: message });
                 this.saveMessages();
                 this.userInput = '';
                 this.isLoading = true;
-
-                // Auto scroll to bottom
                 this.$nextTick(() => {
-                    const container = this.$refs.messagesContainer;
-                    if (container) container.scrollTop = container.scrollHeight;
+                    const c = this.$refs.messagesContainer;
+                    if (c) c.scrollTop = c.scrollHeight;
                 });
-
-            try {
-            const response = await fetch('{{ route('ai-assistant.chat') }}', {
-            method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ message })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                this.messages.push({ role: 'assistant', content: data.message });
-                this.saveMessages();
-            } else {
-                this.messages.push({ role: 'assistant', content: data.message || 'Terjadi kesalahan.' });
-                this.saveMessages();
+                try {
+                    const response = await fetch('{{ route('ai-assistant.chat') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        body: JSON.stringify({ message })
+                    });
+                    const data = await response.json();
+                    this.messages.push({ role: 'assistant', content: data.message || 'Terjadi kesalahan.' });
+                    this.saveMessages();
+                } catch (error) {
+                    this.messages.push({ role: 'assistant', content: 'Maaf, terjadi kesalahan koneksi.' });
+                    this.saveMessages();
+                } finally {
+                    this.isLoading = false;
+                    this.$nextTick(() => {
+                        const c = this.$refs.messagesContainer;
+                        if (c) c.scrollTop = c.scrollHeight;
+                    });
+                }
             }
-            } catch (error) {
-                this.messages.push({ role: 'assistant', content: 'Maaf, terjadi kesalahan koneksi.' });
-                this.saveMessages();
-            } finally {
-                this.isLoading = false;
-                this.$nextTick(() => {
-                    const container = this.$refs.messagesContainer;
-                    if (container) container.scrollTop = container.scrollHeight;
-                });
-            }
-            }
-            }" class="fixed bottom-6 right-6 z-50">
+        }" style="position:fixed; bottom:1.5rem; right:1.5rem; z-index:50; display:flex; flex-direction:column; align-items:flex-end; justify-content:flex-end; gap:0.75rem;">
 
-            <!-- Floating Chat Button -->
-            <button @click="open = !open" x-show="!open"
-                class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 group">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
-                    </path>
-                </svg>
-            </button>
-
-            <!-- Chat Modal -->
-            <div x-show="open" x-transition:enter="transition ease-out duration-300"
-                x-transition:enter-start="opacity-0 transform scale-90"
-                x-transition:enter-end="opacity-100 transform scale-100"
+            <!-- Chat Modal - rendered ABOVE the button, origin bottom-right -->
+            <div x-show="open"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-90"
+                x-transition:enter-end="opacity-100 scale-100"
                 x-transition:leave="transition ease-in duration-200"
-                x-transition:leave-start="opacity-100 transform scale-100"
-                x-transition:leave-end="opacity-0 transform scale-90"
-                class="bg-white rounded-2xl shadow-2xl w-96 h-[600px] flex flex-col overflow-hidden"
+                x-transition:leave-start="opacity-100 scale-100"
+                x-transition:leave-end="opacity-0 scale-90"
+                class="bg-white rounded-2xl shadow-2xl w-96 h-[600px] flex flex-col overflow-hidden origin-bottom-right"
                 style="display: none;">
 
                 <!-- Header -->
@@ -580,6 +538,19 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Floating Chat Button -->
+            <button @click="open = !open"
+                class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex-shrink-0">
+                <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z">
+                    </path>
+                </svg>
+                <svg x-show="open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -649,73 +620,240 @@
         }
     </script>
 
-    {{-- Global Toast Notification System - CLEAN & MODERN --}}
-    @if(session('success') || session('error') || session('info'))
+    {{-- Penguin UI Alpine Toast System --}}
+    <div
+        x-data="{
+            notifications: [],
+            displayDuration: 5000,
+            addNotification({ variant = 'info', title = null, message = null }) {
+                const id = Date.now();
+                if (this.notifications.length >= 10) this.notifications.splice(0, 1);
+                this.notifications.push({ id, variant, title, message, remaining: this.displayDuration, startedAt: Date.now() });
+            },
+            removeNotification(id) {
+                this.notifications = this.notifications.filter(n => n.id !== id);
+            }
+        }"
+        x-on:notify.window="addNotification({ variant: $event.detail.variant, title: $event.detail.title, message: $event.detail.message })"
+        class="fixed top-20 right-6 z-[9999] flex flex-col gap-3 w-80 pointer-events-none"
+        aria-live="polite"
+    >
+        <div class="flex flex-col gap-3">
+            <template x-for="(notification, index) in notifications" x-bind:key="notification.id">
+                <div>
+                    <!-- Success -->
+                    <template x-if="notification.variant === 'success'">
+                        <div x-data="{ isVisible: false, timeout: null, remaining: 5000, startedAt: null, progressEl: null }"
+                            x-cloak x-show="isVisible"
+                            x-init="
+                                $nextTick(() => { isVisible = true });
+                                remaining = $root.__x.$data.displayDuration;
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                $nextTick(() => { progressEl = $el.querySelector('.toast-bar'); });
+                            "
+                            x-on:mouseenter="
+                                clearTimeout(timeout);
+                                let elapsed = Date.now() - startedAt;
+                                remaining = Math.max(remaining - elapsed, 0);
+                                if (progressEl) { progressEl.style.animationPlayState = 'paused'; }
+                            "
+                            x-on:mouseleave="
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                if (progressEl) { progressEl.style.animationPlayState = 'running'; }
+                            "
+                            x-transition:enter="transition duration-300 ease-out"
+                            x-transition:enter-start="translate-x-12 opacity-0"
+                            x-transition:enter-end="translate-x-0 opacity-100"
+                            x-transition:leave="transition duration-300 ease-in"
+                            x-transition:leave-start="translate-x-0 opacity-100"
+                            x-transition:leave-end="translate-x-full opacity-0"
+                            class="pointer-events-auto w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+                            role="alert">
+                            <div class="flex items-start gap-3 p-4">
+                                <div class="h-9 w-9 shrink-0 rounded-full bg-emerald-50 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-emerald-500">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p x-show="notification.title" x-text="notification.title" class="text-sm font-semibold text-gray-900 leading-snug"></p>
+                                    <p x-show="notification.message" x-text="notification.message" class="text-sm text-gray-500 mt-0.5 leading-snug"></p>
+                                </div>
+                                <button type="button" x-on:click="clearTimeout(timeout); isVisible = false; setTimeout(() => removeNotification(notification.id), 400)" class="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" aria-label="Tutup">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="h-1 bg-emerald-100"><div class="h-1 bg-emerald-500 toast-bar toast-progress"></div></div>
+                        </div>
+                    </template>
+
+                    <!-- Error / Danger -->
+                    <template x-if="notification.variant === 'error' || notification.variant === 'danger'">
+                        <div x-data="{ isVisible: false, timeout: null, remaining: 5000, startedAt: null, progressEl: null }"
+                            x-cloak x-show="isVisible"
+                            x-init="
+                                $nextTick(() => { isVisible = true });
+                                remaining = $root.__x.$data.displayDuration;
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                $nextTick(() => { progressEl = $el.querySelector('.toast-bar'); });
+                            "
+                            x-on:mouseenter="
+                                clearTimeout(timeout);
+                                let elapsed = Date.now() - startedAt;
+                                remaining = Math.max(remaining - elapsed, 0);
+                                if (progressEl) { progressEl.style.animationPlayState = 'paused'; }
+                            "
+                            x-on:mouseleave="
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                if (progressEl) { progressEl.style.animationPlayState = 'running'; }
+                            "
+                            x-transition:enter="transition duration-300 ease-out"
+                            x-transition:enter-start="translate-x-12 opacity-0"
+                            x-transition:enter-end="translate-x-0 opacity-100"
+                            x-transition:leave="transition duration-300 ease-in"
+                            x-transition:leave-start="translate-x-0 opacity-100"
+                            x-transition:leave-end="translate-x-full opacity-0"
+                            class="pointer-events-auto w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+                            role="alert">
+                            <div class="flex items-start gap-3 p-4">
+                                <div class="h-9 w-9 shrink-0 rounded-full bg-red-50 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-red-500">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-5a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-4.5A.75.75 0 0 1 10 5Zm0 10a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p x-show="notification.title" x-text="notification.title" class="text-sm font-semibold text-gray-900 leading-snug"></p>
+                                    <p x-show="notification.message" x-text="notification.message" class="text-sm text-gray-500 mt-0.5 leading-snug"></p>
+                                </div>
+                                <button type="button" x-on:click="clearTimeout(timeout); isVisible = false; setTimeout(() => removeNotification(notification.id), 400)" class="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" aria-label="Tutup">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="h-1 bg-red-100"><div class="h-1 bg-red-500 toast-bar toast-progress"></div></div>
+                        </div>
+                    </template>
+
+                    <!-- Warning -->
+                    <template x-if="notification.variant === 'warning'">
+                        <div x-data="{ isVisible: false, timeout: null, remaining: 5000, startedAt: null, progressEl: null }"
+                            x-cloak x-show="isVisible"
+                            x-init="
+                                $nextTick(() => { isVisible = true });
+                                remaining = $root.__x.$data.displayDuration;
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                $nextTick(() => { progressEl = $el.querySelector('.toast-bar'); });
+                            "
+                            x-on:mouseenter="
+                                clearTimeout(timeout);
+                                let elapsed = Date.now() - startedAt;
+                                remaining = Math.max(remaining - elapsed, 0);
+                                if (progressEl) { progressEl.style.animationPlayState = 'paused'; }
+                            "
+                            x-on:mouseleave="
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                if (progressEl) { progressEl.style.animationPlayState = 'running'; }
+                            "
+                            x-transition:enter="transition duration-300 ease-out"
+                            x-transition:enter-start="translate-x-12 opacity-0"
+                            x-transition:enter-end="translate-x-0 opacity-100"
+                            x-transition:leave="transition duration-300 ease-in"
+                            x-transition:leave-start="translate-x-0 opacity-100"
+                            x-transition:leave-end="translate-x-full opacity-0"
+                            class="pointer-events-auto w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+                            role="alert">
+                            <div class="flex items-start gap-3 p-4">
+                                <div class="h-9 w-9 shrink-0 rounded-full bg-amber-50 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-amber-500">
+                                        <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p x-show="notification.title" x-text="notification.title" class="text-sm font-semibold text-gray-900 leading-snug"></p>
+                                    <p x-show="notification.message" x-text="notification.message" class="text-sm text-gray-500 mt-0.5 leading-snug"></p>
+                                </div>
+                                <button type="button" x-on:click="clearTimeout(timeout); isVisible = false; setTimeout(() => removeNotification(notification.id), 400)" class="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" aria-label="Tutup">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="h-1 bg-amber-100"><div class="h-1 bg-amber-500 toast-bar toast-progress"></div></div>
+                        </div>
+                    </template>
+
+                    <!-- Info -->
+                    <template x-if="notification.variant === 'info'">
+                        <div x-data="{ isVisible: false, timeout: null, remaining: 5000, startedAt: null, progressEl: null }"
+                            x-cloak x-show="isVisible"
+                            x-init="
+                                $nextTick(() => { isVisible = true });
+                                remaining = $root.__x.$data.displayDuration;
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                $nextTick(() => { progressEl = $el.querySelector('.toast-bar'); });
+                            "
+                            x-on:mouseenter="
+                                clearTimeout(timeout);
+                                let elapsed = Date.now() - startedAt;
+                                remaining = Math.max(remaining - elapsed, 0);
+                                if (progressEl) { progressEl.style.animationPlayState = 'paused'; }
+                            "
+                            x-on:mouseleave="
+                                startedAt = Date.now();
+                                timeout = setTimeout(() => { isVisible = false; setTimeout(() => removeNotification(notification.id), 400); }, remaining);
+                                if (progressEl) { progressEl.style.animationPlayState = 'running'; }
+                            "
+                            x-transition:enter="transition duration-300 ease-out"
+                            x-transition:enter-start="translate-x-12 opacity-0"
+                            x-transition:enter-end="translate-x-0 opacity-100"
+                            x-transition:leave="transition duration-300 ease-in"
+                            x-transition:leave-start="translate-x-0 opacity-100"
+                            x-transition:leave-end="translate-x-full opacity-0"
+                            class="pointer-events-auto w-full bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
+                            role="alert">
+                            <div class="flex items-start gap-3 p-4">
+                                <div class="h-9 w-9 shrink-0 rounded-full bg-blue-50 flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-blue-500">
+                                        <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p x-show="notification.title" x-text="notification.title" class="text-sm font-semibold text-gray-900 leading-snug"></p>
+                                    <p x-show="notification.message" x-text="notification.message" class="text-sm text-gray-500 mt-0.5 leading-snug"></p>
+                                </div>
+                                <button type="button" x-on:click="clearTimeout(timeout); isVisible = false; setTimeout(() => removeNotification(notification.id), 400)" class="shrink-0 rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" aria-label="Tutup">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="h-1 bg-blue-100"><div class="h-1 bg-blue-500 toast-bar toast-progress"></div></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    {{-- Trigger Penguin UI Toast from Laravel session flash --}}
+    @if(session('success') || session('error') || session('info') || session('warning'))
         <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 4000,
-                    timerProgressBar: true,
-                    width: '350px', // Slightly wider for better text flow
-                    padding: '16px',
-                    didOpen: (toast) => {
-                        toast.style.marginTop = '74px'; // Below header
-                        toast.style.marginRight = '24px';
-                        toast.style.zIndex = '9999';
-                        toast.style.fontSize = '14px';
-                        toast.style.fontWeight = '500';
-                        toast.addEventListener('mouseenter', Swal.stopTimer);
-                        toast.addEventListener('mouseleave', Swal.resumeTimer);
-                    },
-                    customClass: {
-                        popup: 'swal-toast-custom',
-                        title: 'swal-toast-title',
-                        timerProgressBar: 'swal-toast-progress'
-                    }
-                });
-
+            document.addEventListener('alpine:initialized', function () {
                 @if(session('success'))
-                    Toast.fire({
-                        icon: 'success',
-                        title: '{{ session('success') }}',
-                        background: '#ffffff',
-                        color: '#065f46',
-                        iconColor: '#10b981',
-                        customClass: {
-                            popup: 'rounded-2xl shadow-2xl border-2 border-emerald-500'
-                        }
-                    });
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { variant: 'success', title: 'Berhasil!', message: '{{ addslashes(session('success')) }}' } }));
                 @endif
-
                 @if(session('error'))
-                    Toast.fire({
-                        icon: 'error',
-                        title: '{{ session('error') }}',
-                        background: '#ffffff',
-                        color: '#991b1b',
-                        iconColor: '#ef4444',
-                        customClass: {
-                            popup: 'rounded-2xl shadow-2xl border-2 border-red-500'
-                        }
-                    });
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { variant: 'error', title: 'Gagal!', message: '{{ addslashes(session('error')) }}' } }));
                 @endif
-
                 @if(session('info'))
-                    Toast.fire({
-                        icon: 'info',
-                        title: '{{ session('info') }}',
-                        background: '#ffffff',
-                        color: '#1e40af',
-                        iconColor: '#3b82f6',
-                        customClass: {
-                            popup: 'rounded-2xl shadow-2xl border-2 border-blue-500'
-                        }
-                    });
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { variant: 'info', title: 'Info', message: '{{ addslashes(session('info')) }}' } }));
                 @endif
-                                    });
+                @if(session('warning'))
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { variant: 'warning', title: 'Peringatan', message: '{{ addslashes(session('warning')) }}' } }));
+                @endif
+            });
         </script>
     @endif
 
