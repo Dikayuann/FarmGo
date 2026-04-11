@@ -16,6 +16,15 @@ jobs:
         working-directory: /www/wwwroot/FarmGo
 
     steps:
+      - name: Show runner context
+        run: |
+          whoami
+          pwd
+
+      - name: Fix repo ownership for runner
+        run: |
+          sudo chown -R ubuntu:ubuntu /www/wwwroot/FarmGo
+
       - name: Sync code to origin/main
         run: |
           git fetch origin main
@@ -31,7 +40,7 @@ jobs:
 
       - name: Ensure writable Laravel dirs
         run: |
-          sudo chown -R www:www storage bootstrap/cache
+          sudo chgrp -R www storage bootstrap/cache
           sudo chmod -R 775 storage bootstrap/cache
 
       - name: Laravel health check
